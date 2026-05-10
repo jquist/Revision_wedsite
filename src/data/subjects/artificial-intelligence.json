@@ -1,0 +1,64 @@
+{
+  "subjectId": "artificial-intelligence",
+  "subjectName": "Artificial Intelligence",
+  "description": "Revision for AI topics such as search, logic, probability, and machine learning.",
+  "createdAt": "2026-05-10",
+  "updatedAt": "2026-05-10",
+  "topics": [
+    {
+      "topicId": "search",
+      "topicName": "Search Algorithms",
+      "sourceFiles": [
+        "lecture-02-search.pdf"
+      ],
+      "summary": "Search algorithms explore possible states to find a solution path from an initial state to a goal state.",
+      "notes": [
+        {
+          "noteId": "n1",
+          "heading": "State-space search",
+          "content": "A problem can be represented using states, actions, an initial state, and goal conditions."
+        },
+        {
+          "noteId": "n2",
+          "heading": "Breadth-first search",
+          "content": "Breadth-first search explores shallower nodes before deeper nodes, which can find the shortest path when all step costs are equal."
+        }
+      ],
+      "flashcards": [
+        {
+          "flashcardId": "fc1",
+          "question": "What is a state in AI search?",
+          "answer": "A representation of a possible situation in the problem.",
+          "difficulty": "medium",
+          "tags": [
+            "search"
+          ],
+          "correctCount": 0,
+          "incorrectCount": 0,
+          "lastReviewed": null
+        }
+      ],
+      "quizQuestions": [
+        {
+          "questionId": "q1",
+          "type": "multiple-choice",
+          "question": "Which search method explores shallow nodes first?",
+          "options": [
+            "Depth-first search",
+            "Breadth-first search",
+            "Hill climbing",
+            "Random search"
+          ],
+          "correctAnswer": "Breadth-first search",
+          "explanation": "Breadth-first search expands nodes level by level."
+        }
+      ],
+      "glossary": [
+        {
+          "term": "State",
+          "definition": "A possible configuration or situation in a search problem."
+        }
+      ]
+    }
+  ]
+}

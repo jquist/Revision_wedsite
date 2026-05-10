@@ -1,0 +1,77 @@
+{
+  "subjectId": "networking",
+  "subjectName": "Networking",
+  "description": "Revision for networking, cybersecurity, and internet concepts.",
+  "createdAt": "2026-05-10",
+  "updatedAt": "2026-05-10",
+  "topics": [
+    {
+      "topicId": "dns",
+      "topicName": "DNS",
+      "sourceFiles": [
+        "lecture-01-dns.pdf"
+      ],
+      "summary": "DNS translates human-readable domain names into IP addresses so browsers can load websites.",
+      "notes": [
+        {
+          "noteId": "n1",
+          "heading": "What DNS does",
+          "content": "DNS stands for Domain Name System. It works like the internet's phonebook by turning names like google.com into IP addresses."
+        },
+        {
+          "noteId": "n2",
+          "heading": "Why DNS matters",
+          "content": "Without DNS, users would need to remember long IP addresses instead of simple website names."
+        }
+      ],
+      "flashcards": [
+        {
+          "flashcardId": "fc1",
+          "question": "What does DNS stand for?",
+          "answer": "Domain Name System.",
+          "difficulty": "easy",
+          "tags": [
+            "dns",
+            "internet"
+          ],
+          "correctCount": 0,
+          "incorrectCount": 0,
+          "lastReviewed": null
+        },
+        {
+          "flashcardId": "fc2",
+          "question": "What is the main purpose of DNS?",
+          "answer": "To translate domain names into IP addresses.",
+          "difficulty": "easy",
+          "tags": [
+            "dns"
+          ],
+          "correctCount": 0,
+          "incorrectCount": 0,
+          "lastReviewed": null
+        }
+      ],
+      "quizQuestions": [
+        {
+          "questionId": "q1",
+          "type": "multiple-choice",
+          "question": "What does DNS translate?",
+          "options": [
+            "Passwords into hashes",
+            "Domain names into IP addresses",
+            "Images into HTML",
+            "Viruses into safe files"
+          ],
+          "correctAnswer": "Domain names into IP addresses",
+          "explanation": "DNS maps readable website names to IP addresses."
+        }
+      ],
+      "glossary": [
+        {
+          "term": "DNS",
+          "definition": "A system that translates domain names into IP addresses."
+        }
+      ]
+    }
+  ]
+}
