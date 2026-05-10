@@ -33,7 +33,22 @@
           "tags": [
             "search"
           ],
+          "score": 0,
           "correctCount": 0,
+          "incorrectCount": 0,
+          "lastReviewed": null
+        },
+        {
+          "flashcardId": "fc2",
+          "question": "What does breadth-first search explore first?",
+          "answer": "It explores shallower nodes before deeper nodes.",
+          "difficulty": "medium",
+          "tags": [
+            "search",
+            "bfs"
+          ],
+          "score": 2,
+          "correctCount": 2,
           "incorrectCount": 0,
           "lastReviewed": null
         }
@@ -57,6 +72,10 @@
         {
           "term": "State",
           "definition": "A possible configuration or situation in a search problem."
+        },
+        {
+          "term": "Goal Test",
+          "definition": "A test used to check whether a state solves the problem."
         }
       ]
     }

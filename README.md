@@ -1,57 +1,48 @@
-# Revision App Subject-Per-File Starter
+# Revision App v2
 
-This starter uses one JSON file per subject.
-
-Example structure:
-
-```txt
-src/
-  data/
-    subjects/
-      networking.json
-      artificial-intelligence.json
-    subjectManifest.js
-  utils/
-    revisionHelpers.js
-  components/
-  pages/
-```
-
-## Install Bootstrap
+This is a full normal React app that runs with:
 
 ```bash
-npm install bootstrap
+npm install
+npm start
 ```
 
-## Current behaviour
+It does not need Vite.
 
-- Dashboard loads multiple subject files.
-- Each subject has topics.
-- Each topic has notes, flashcards, quiz questions, and glossary terms.
-- Flashcards can be marked right or wrong.
-- Progress updates in React state.
-- Saving is not connected to a backend yet.
+## New in this version
 
-## Later backend idea
+- Add new subject card on the dashboard.
+- New subject card is the same visual size as the subject cards.
+- Topic selector includes `All topics`.
+- Flashcards can be filtered by score:
+  - `+3`
+  - `+2`
+  - `+1`
+  - `0`
+  - `-1`
+  - `-2`
+  - `-3`
+- Flashcards also have:
+  - `All Cards`
+  - `Refresh Cards`
+- Each card starts with score `0`.
+- Correct answer adds `+1`.
+- Wrong answer adds `-1`.
+- Score is clamped between `-3` and `+3`.
+- Add-card form is now inside the flashcard section.
+- Added subjects, added cards, and card progress save to localStorage.
 
-In a real app, the user could have this structure:
+## Run
 
-```txt
-users/
-  user123/
-    subjects/
-      networking.json
-      artificial-intelligence.json
+Unzip the folder, open a terminal inside it, then run:
+
+```bash
+npm install
+npm start
 ```
 
-Or in a database:
+Then open:
 
 ```txt
-User
-  Subject
-    Topic
-      Flashcard
-      QuizQuestion
-      Note
-      GlossaryTerm
+http://localhost:3000
 ```

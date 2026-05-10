@@ -5,7 +5,7 @@ function SubjectCard({ subject, onSelectSubject }) {
   const stats = getSubjectStats(subject);
 
   return (
-    <div className="card shadow-sm h-100">
+    <div className="card shadow-sm h-100 subject-card">
       <div className="card-body d-flex flex-column">
         <h3 className="card-title">{subject.subjectName}</h3>
 
@@ -15,6 +15,9 @@ function SubjectCard({ subject, onSelectSubject }) {
           <div>{stats.totalTopics} topic(s)</div>
           <div>{stats.totalFlashcards} flashcard(s)</div>
           <div>{stats.totalQuestions} quiz question(s)</div>
+          <div>
+            Progress: {stats.correctCount} right / {stats.incorrectCount} wrong
+          </div>
         </div>
 
         <button

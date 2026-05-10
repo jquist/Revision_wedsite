@@ -1,3 +1,41 @@
+export const ALL_TOPICS_ID = "all-topics";
+
+export function makeSlug(value) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
+
+export function clampScore(score) {
+  return Math.max(-3, Math.min(3, score));
+}
+
+export function createBlankSubject({ subjectName, description }) {
+  const idBase = makeSlug(subjectName) || `subject-${Date.now()}`;
+
+  return {
+    subjectId: `${idBase}-${Date.now()}`,
+    subjectName,
+    description: description || "New revision subject.",
+    createdAt: new Date().toISOString().slice(0, 10),
+    updatedAt: new Date().toISOString().slice(0, 10),
+    topics: [
+      {
+        topicId: "general",
+        topicName: "General",
+        sourceFiles: [],
+        summary: "General revision topic. Add flashcards, notes, tests, and glossary terms here.",
+        notes: [],
+        flashcards: [],
+        quizQuestions: [],
+        glossary: [],
+      },
+    ],
+  };
+}
+
 export function getSubjectStats(subject) {
   const topics = subject.topics || [];
 
@@ -47,27 +85,77 @@ export function getSubjectStats(subject) {
 }
 
 export function findTopicById(subject, topicId) {
+  if (topicId === ALL_TOPICS_ID) {
+    return {
+      topicId: ALL_TOPICS_ID,
+      topicName: "All Topics",
+      summary: "Combined revision across every topic in this subject.",
+      notes: subject.topics.flatMap((topic) =>
+        (topic.notes || []).map((note) => ({
+          ...note,
+          noteId: `${topic.topicId}-${note.noteId}`,
+          topicName: topic.topicName,
+        }))
+      ),
+      flashcards: subject.topics.flatMap((topic) =>
+        (topic.flashcards || []).map((card) => ({
+          ...card,
+          flashcardId: `${topic.topicId}__${card.flashcardId}`,
+          originalFlashcardId: card.flashcardId,
+          originalTopicId: topic.topicId,
+          topicName: topic.topicName,
+        }))
+      ),
+      quizQuestions: subject.topics.flatMap((topic) =>
+        (topic.quizQuestions || []).map((question) => ({
+          ...question,
+          questionId: `${topic.topicId}-${question.questionId}`,
+          topicName: topic.topicName,
+        }))
+      ),
+      glossary: subject.topics.flatMap((topic) =>
+        (topic.glossary || []).map((item) => ({
+          ...item,
+          term: `${item.term} (${topic.topicName})`,
+          topicName: topic.topicName,
+        }))
+      ),
+    };
+  }
+
   return subject.topics.find((topic) => topic.topicId === topicId);
 }
 
 export function updateFlashcardProgress(subject, topicId, flashcardId, wasCorrect) {
+  const realTopicId = topicId === ALL_TOPICS_ID && flashcardId.includes("__")
+    ? flashcardId.split("__")[0]
+    : topicId;
+
+  const realFlashcardId = flashcardId.includes("__")
+    ? flashcardId.split("__")[1]
+    : flashcardId;
+
   return {
     ...subject,
     updatedAt: new Date().toISOString().slice(0, 10),
     topics: subject.topics.map((topic) => {
-      if (topic.topicId !== topicId) {
+      if (topic.topicId !== realTopicId) {
         return topic;
       }
 
       return {
         ...topic,
         flashcards: topic.flashcards.map((card) => {
-          if (card.flashcardId !== flashcardId) {
+          if (card.flashcardId !== realFlashcardId) {
             return card;
           }
 
+          const currentScore = card.score || 0;
+          const nextScore = clampScore(wasCorrect ? currentScore + 1 : currentScore - 1);
+
           return {
             ...card,
+            score: nextScore,
             correctCount: wasCorrect
               ? (card.correctCount || 0) + 1
               : card.correctCount || 0,
@@ -75,6 +163,73 @@ export function updateFlashcardProgress(subject, topicId, flashcardId, wasCorrec
               ? card.incorrectCount || 0
               : (card.incorrectCount || 0) + 1,
             lastReviewed: new Date().toISOString(),
+          };
+        }),
+      };
+    }),
+  };
+}
+
+export function addFlashcard(subject, topicId, newCard) {
+  const targetTopicId = topicId === ALL_TOPICS_ID
+    ? subject.topics[0].topicId
+    : topicId;
+
+  return {
+    ...subject,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    topics: subject.topics.map((topic) => {
+      if (topic.topicId !== targetTopicId) {
+        return topic;
+      }
+
+      return {
+        ...topic,
+        flashcards: [
+          ...topic.flashcards,
+          {
+            flashcardId: `fc-${Date.now()}`,
+            difficulty: "medium",
+            tags: [],
+            score: 0,
+            correctCount: 0,
+            incorrectCount: 0,
+            lastReviewed: null,
+            ...newCard,
+          },
+        ],
+      };
+    }),
+  };
+}
+
+
+export function resetFlashcardStats(subject, topicId, flashcardIdsToReset = null) {
+  const resetIds = flashcardIdsToReset ? new Set(flashcardIdsToReset) : null;
+
+  return {
+    ...subject,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    topics: subject.topics.map((topic) => {
+      return {
+        ...topic,
+        flashcards: topic.flashcards.map((card) => {
+          const combinedId = `${topic.topicId}__${card.flashcardId}`;
+          const shouldReset =
+            topicId === ALL_TOPICS_ID
+              ? !resetIds || resetIds.has(combinedId)
+              : topic.topicId === topicId && (!resetIds || resetIds.has(card.flashcardId));
+
+          if (!shouldReset) {
+            return card;
+          }
+
+          return {
+            ...card,
+            score: 0,
+            correctCount: 0,
+            incorrectCount: 0,
+            lastReviewed: null,
           };
         }),
       };

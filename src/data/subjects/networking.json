@@ -34,6 +34,7 @@
             "dns",
             "internet"
           ],
+          "score": 0,
           "correctCount": 0,
           "incorrectCount": 0,
           "lastReviewed": null
@@ -46,8 +47,22 @@
           "tags": [
             "dns"
           ],
+          "score": 0,
           "correctCount": 0,
           "incorrectCount": 0,
+          "lastReviewed": null
+        },
+        {
+          "flashcardId": "fc3",
+          "question": "Why is DNS useful for normal users?",
+          "answer": "It lets users type memorable domain names instead of numerical IP addresses.",
+          "difficulty": "medium",
+          "tags": [
+            "dns"
+          ],
+          "score": -1,
+          "correctCount": 0,
+          "incorrectCount": 1,
           "lastReviewed": null
         }
       ],
@@ -70,6 +85,72 @@
         {
           "term": "DNS",
           "definition": "A system that translates domain names into IP addresses."
+        }
+      ]
+    },
+    {
+      "topicId": "ip-addresses",
+      "topicName": "IP Addresses",
+      "sourceFiles": [
+        "lecture-02-ip-addresses.pdf"
+      ],
+      "summary": "IP addresses identify devices on a network so data can be routed to the correct destination.",
+      "notes": [
+        {
+          "noteId": "n1",
+          "heading": "IP address purpose",
+          "content": "An IP address is used to identify a device on a network. It helps packets reach the correct destination."
+        }
+      ],
+      "flashcards": [
+        {
+          "flashcardId": "fc1",
+          "question": "What is an IP address used for?",
+          "answer": "Identifying a device on a network.",
+          "difficulty": "easy",
+          "tags": [
+            "ip",
+            "networking"
+          ],
+          "score": 1,
+          "correctCount": 1,
+          "incorrectCount": 0,
+          "lastReviewed": null
+        },
+        {
+          "flashcardId": "fc2",
+          "question": "What happens if a packet has the wrong destination IP?",
+          "answer": "It may be sent to the wrong device or fail to reach the intended destination.",
+          "difficulty": "medium",
+          "tags": [
+            "ip",
+            "packets"
+          ],
+          "score": 0,
+          "correctCount": 0,
+          "incorrectCount": 0,
+          "lastReviewed": null
+        }
+      ],
+      "quizQuestions": [
+        {
+          "questionId": "q1",
+          "type": "multiple-choice",
+          "question": "Which option best describes an IP address?",
+          "options": [
+            "A device identifier on a network",
+            "A type of password",
+            "A screen resolution",
+            "A file format"
+          ],
+          "correctAnswer": "A device identifier on a network",
+          "explanation": "IP addresses are used so devices can send and receive network traffic."
+        }
+      ],
+      "glossary": [
+        {
+          "term": "IP Address",
+          "definition": "A numerical address used to identify a device on a network."
         }
       ]
     }

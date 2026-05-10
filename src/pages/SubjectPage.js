@@ -4,28 +4,47 @@ import FlashcardPractice from "../components/FlashcardPractice";
 import PracticeTest from "../components/PracticeTest";
 import RevisionNotes from "../components/RevisionNotes";
 import Glossary from "../components/Glossary";
-import { findTopicById, updateFlashcardProgress } from "../utils/revisionHelpers";
+import {
+  ALL_TOPICS_ID,
+  addFlashcard,
+  findTopicById,
+  updateFlashcardProgress,
+  resetFlashcardStats,
+} from "../utils/revisionHelpers";
 
-function SubjectPage({ subject, onBack }) {
-  const [localSubject, setLocalSubject] = useState(subject);
-  const [selectedTopicId, setSelectedTopicId] = useState(subject.topics[0].topicId);
+function SubjectPage({ subject, onBack, onUpdateSubject }) {
+  const [selectedTopicId, setSelectedTopicId] = useState(ALL_TOPICS_ID);
   const [activeTab, setActiveTab] = useState("flashcards");
 
-  const selectedTopic = findTopicById(localSubject, selectedTopicId);
+  const selectedTopic = findTopicById(subject, selectedTopicId);
 
   function handleMarkFlashcard(topicId, flashcardId, wasCorrect) {
     const updatedSubject = updateFlashcardProgress(
-      localSubject,
+      subject,
       topicId,
       flashcardId,
       wasCorrect
     );
 
-    setLocalSubject(updatedSubject);
-
-    // Later this is where you would save to backend/localStorage.
-    console.log("Updated subject:", updatedSubject);
+    onUpdateSubject(updatedSubject);
   }
+
+  function handleAddFlashcard(newCard) {
+    const updatedSubject = addFlashcard(subject, selectedTopicId, newCard);
+    onUpdateSubject(updatedSubject);
+  }
+
+
+  function handleRefreshCardStats(visibleFlashcardIds) {
+    const updatedSubject = resetFlashcardStats(
+      subject,
+      selectedTopicId,
+      visibleFlashcardIds
+    );
+
+    onUpdateSubject(updatedSubject);
+  }
+
 
   return (
     <div className="container py-4">
@@ -33,11 +52,11 @@ function SubjectPage({ subject, onBack }) {
         Back
       </button>
 
-      <h1>{localSubject.subjectName}</h1>
-      <p className="text-muted">{localSubject.description}</p>
+      <h1>{subject.subjectName}</h1>
+      <p className="text-muted">{subject.description}</p>
 
       <TopicSelector
-        subject={localSubject}
+        subject={subject}
         selectedTopicId={selectedTopicId}
         onSelectTopic={setSelectedTopicId}
       />
@@ -83,7 +102,10 @@ function SubjectPage({ subject, onBack }) {
       {activeTab === "flashcards" && (
         <FlashcardPractice
           topic={selectedTopic}
+          selectedTopicId={selectedTopicId}
           onMarkFlashcard={handleMarkFlashcard}
+          onAddFlashcard={handleAddFlashcard}
+          onRefreshCardStats={handleRefreshCardStats}
         />
       )}
 

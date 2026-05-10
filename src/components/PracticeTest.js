@@ -29,6 +29,11 @@ function PracticeTest({ topic }) {
           <div className="card-body">
             <h5>
               {index + 1}. {question.question}
+              {question.topicName ? (
+                <span className="badge text-bg-secondary ms-2">
+                  {question.topicName}
+                </span>
+              ) : null}
             </h5>
 
             {question.options.map((option) => (
