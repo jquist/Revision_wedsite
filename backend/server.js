@@ -7,10 +7,13 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 
 const requireAuth = require("./authMiddleware");
+const aiRoutes = require("./routes/aiRoutes");
 const {
   addUser,
+  deleteSubjectForUser,
   getSubjectsForUser,
   getUserByUsername,
+  saveSubjectForUser,
   saveSubjectsForUser
 } = require("./db");
 
@@ -24,6 +27,8 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: "5mb" }));
+
+app.use("/api/ai", aiRoutes);
 
 function createToken(user) {
   return jwt.sign(
@@ -126,47 +131,37 @@ app.put("/api/subjects", requireAuth, (req, res) => {
 });
 
 app.put("/api/subjects/:subjectId", requireAuth, (req, res) => {
-  const subjects = getSubjectsForUser(req.user.userId);
   const updatedSubject = req.body.subject;
 
   if (!updatedSubject || updatedSubject.subjectId !== req.params.subjectId) {
     return res.status(400).json({ message: "Valid subject data is required." });
   }
 
-  const exists = subjects.some((subject) => subject.subjectId === req.params.subjectId);
+  saveSubjectForUser(req.user.userId, updatedSubject);
 
-  const nextSubjects = exists
-    ? subjects.map((subject) =>
-        subject.subjectId === req.params.subjectId ? updatedSubject : subject
-      )
-    : [...subjects, updatedSubject];
-
-  const savedSubjects = saveSubjectsForUser(req.user.userId, nextSubjects);
-
-  res.json({ subjects: savedSubjects });
+  res.json({ subjects: getSubjectsForUser(req.user.userId) });
 });
 
 app.post("/api/subjects", requireAuth, (req, res) => {
-  const subjects = getSubjectsForUser(req.user.userId);
   const newSubject = req.body.subject;
 
   if (!newSubject || !newSubject.subjectId) {
     return res.status(400).json({ message: "Valid subject data is required." });
   }
 
-  const nextSubjects = [...subjects, newSubject];
-  const savedSubjects = saveSubjectsForUser(req.user.userId, nextSubjects);
+  saveSubjectForUser(req.user.userId, newSubject);
 
-  res.status(201).json({ subjects: savedSubjects, subject: newSubject });
+  res.status(201).json({
+    subjects: getSubjectsForUser(req.user.userId),
+    subject: newSubject
+  });
 });
 
 app.delete("/api/subjects/:subjectId", requireAuth, (req, res) => {
-  const subjects = getSubjectsForUser(req.user.userId);
-  const nextSubjects = subjects.filter(
-    (subject) => subject.subjectId !== req.params.subjectId
+  const savedSubjects = deleteSubjectForUser(
+    req.user.userId,
+    req.params.subjectId
   );
-
-  const savedSubjects = saveSubjectsForUser(req.user.userId, nextSubjects);
 
   res.json({ subjects: savedSubjects });
 });

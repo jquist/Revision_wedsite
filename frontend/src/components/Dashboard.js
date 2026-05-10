@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import SubjectCard from "./SubjectCard";
 import NewSubjectCard from "./NewSubjectCard";
 
-function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubject, onResetDemoData }) {
+function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubject, onDeleteSubject, onResetDemoData }) {
   const [showNewSubjectForm, setShowNewSubjectForm] = useState(false);
 
   return (
@@ -39,6 +39,7 @@ function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubj
             <SubjectCard
               subject={subject}
               onSelectSubject={onSelectSubject}
+              onDeleteSubject={onDeleteSubject}
             />
           </div>
         ))}

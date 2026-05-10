@@ -103,3 +103,26 @@ export async function createSubject(subject) {
 
   return data.subjects;
 }
+
+
+export async function deleteSubject(subjectId) {
+  const data = await request(`/api/subjects/${subjectId}`, {
+    method: "DELETE",
+  });
+
+  return data.subjects;
+}
+
+
+export async function generateTopicWithAI({ subjectName, topicName, lectureText }) {
+  const data = await request("/api/ai/generate-topic", {
+    method: "POST",
+    body: JSON.stringify({
+      subjectName,
+      topicName,
+      lectureText,
+    }),
+  });
+
+  return data.topic;
+}

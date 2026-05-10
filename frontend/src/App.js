@@ -6,6 +6,7 @@ import { createBlankSubject } from "./utils/revisionHelpers";
 import {
   clearSession,
   createSubject,
+  deleteSubject,
   fetchSubjects,
   getSavedUser,
   saveAllSubjects,
@@ -96,6 +97,27 @@ function App() {
     }
   }
 
+
+  async function handleDeleteSubject(subjectId) {
+    const previousSubjects = subjects;
+
+    setSubjects((currentSubjects) =>
+      currentSubjects.filter((subject) => subject.subjectId !== subjectId)
+    );
+
+    if (selectedSubjectId === subjectId) {
+      setSelectedSubjectId(null);
+    }
+
+    try {
+      const savedSubjects = await deleteSubject(subjectId);
+      setSubjects(savedSubjects);
+    } catch (deleteError) {
+      setError(deleteError.message);
+      setSubjects(previousSubjects);
+    }
+  }
+
   async function resetDemoData() {
     try {
       const savedSubjects = await saveAllSubjects([]);
@@ -139,6 +161,7 @@ function App() {
           onLogout={handleLogout}
           onSelectSubject={(subject) => setSelectedSubjectId(subject.subjectId)}
           onAddSubject={addSubject}
+          onDeleteSubject={handleDeleteSubject}
           onResetDemoData={resetDemoData}
         />
       )}

@@ -1,94 +1,91 @@
-# Revision App v6 — Fullstack Auth Prototype
+# Revision App v8 — AI Generate Topic
 
-This version has a React frontend and an Express backend.
+This version keeps the v7 user-file backend layout and adds an AI generation feature.
 
 ## What changed
 
-- Login/register is handled by the backend.
-- Passwords are hashed using bcryptjs.
-- Login returns a JWT token.
-- React sends the JWT token when loading/saving subjects.
-- Each user's subjects are stored separately on the backend.
-- The backend currently uses a server-side JSON database file:
-  - `backend/data/db.json`
+- Added backend OpenAI integration.
+- Added `POST /api/ai/generate-topic`.
+- Added structured JSON output for generated topics.
+- Added an `AI Generate` tab inside each subject.
+- User can paste lecture text.
+- AI returns:
+  - summary
+  - notes
+  - flashcards
+  - quiz questions
+  - glossary
+- User can preview generated JSON.
+- User can save the generated topic into the current subject.
 
-This is much better than storing passwords and users directly in React localStorage.
-
-## Run everything
+## Setup
 
 From this folder:
 
 ```bash
 npm run install-all
-npm start
 ```
 
-Then open:
-
-```txt
-http://localhost:3000
-```
-
-The backend runs on:
-
-```txt
-http://localhost:4000
-```
-
-## Backend env
-
-Copy:
-
-```txt
-backend/.env.example
-```
-
-to:
+Then create:
 
 ```txt
 backend/.env
 ```
 
-and change the JWT secret:
+You can copy:
 
 ```txt
-JWT_SECRET=put-a-long-random-secret-here
+backend/.env.example
 ```
 
-The app will still run without this, but changing it is better.
-
-## Folder structure
+Add your OpenAI API key:
 
 ```txt
-revision-app-v6-fullstack-auth/
-  package.json
-  frontend/
-    package.json
-    src/
-  backend/
-    package.json
-    server.js
-    db.js
-    authMiddleware.js
-    data/
-      defaultSubjects.js
+PORT=4000
+JWT_SECRET=change-this-to-a-long-random-secret
+OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
-## Important security note
+## Run
 
-This is now backend-based auth, but it is still a prototype.
+```bash
+npm start
+```
 
-Good:
-- Passwords are not stored in React.
-- Passwords are hashed.
-- User data is saved on the backend.
-- Users only receive their own subject data through authenticated API routes.
+Open:
 
-Still needed before real deployment:
-- Use HTTPS.
-- Use a real database such as PostgreSQL, MySQL, MongoDB, or SQLite.
-- Store JWT in safer cookies instead of localStorage.
-- Add rate limiting.
-- Add password reset.
-- Add stronger validation.
-- Use a strong production `JWT_SECRET`.
+```txt
+http://localhost:3000
+```
+
+Backend:
+
+```txt
+http://localhost:4000
+```
+
+## How to use AI
+
+1. Register or log in.
+2. Open a subject.
+3. Click `AI Generate`.
+4. Enter a topic name.
+5. Paste lecture text.
+6. Click `Generate Topic`.
+7. Review the preview.
+8. Click `Save Topic`.
+
+## Important
+
+The OpenAI API key must only go in:
+
+```txt
+backend/.env
+```
+
+Never put it in React/frontend code.
+
+## Current limitation
+
+This version starts with pasted lecture text. PDF/PowerPoint/Word upload can be added later.
