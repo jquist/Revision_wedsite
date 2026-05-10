@@ -1,43 +1,25 @@
-# Revision App v2
+# Revision App v6 — Fullstack Auth Prototype
 
-This is a full normal React app that runs with:
+This version has a React frontend and an Express backend.
 
-```bash
-npm install
-npm start
-```
+## What changed
 
-It does not need Vite.
+- Login/register is handled by the backend.
+- Passwords are hashed using bcryptjs.
+- Login returns a JWT token.
+- React sends the JWT token when loading/saving subjects.
+- Each user's subjects are stored separately on the backend.
+- The backend currently uses a server-side JSON database file:
+  - `backend/data/db.json`
 
-## New in this version
+This is much better than storing passwords and users directly in React localStorage.
 
-- Add new subject card on the dashboard.
-- New subject card is the same visual size as the subject cards.
-- Topic selector includes `All topics`.
-- Flashcards can be filtered by score:
-  - `+3`
-  - `+2`
-  - `+1`
-  - `0`
-  - `-1`
-  - `-2`
-  - `-3`
-- Flashcards also have:
-  - `All Cards`
-  - `Refresh Cards`
-- Each card starts with score `0`.
-- Correct answer adds `+1`.
-- Wrong answer adds `-1`.
-- Score is clamped between `-3` and `+3`.
-- Add-card form is now inside the flashcard section.
-- Added subjects, added cards, and card progress save to localStorage.
+## Run everything
 
-## Run
-
-Unzip the folder, open a terminal inside it, then run:
+From this folder:
 
 ```bash
-npm install
+npm run install-all
 npm start
 ```
 
@@ -46,3 +28,67 @@ Then open:
 ```txt
 http://localhost:3000
 ```
+
+The backend runs on:
+
+```txt
+http://localhost:4000
+```
+
+## Backend env
+
+Copy:
+
+```txt
+backend/.env.example
+```
+
+to:
+
+```txt
+backend/.env
+```
+
+and change the JWT secret:
+
+```txt
+JWT_SECRET=put-a-long-random-secret-here
+```
+
+The app will still run without this, but changing it is better.
+
+## Folder structure
+
+```txt
+revision-app-v6-fullstack-auth/
+  package.json
+  frontend/
+    package.json
+    src/
+  backend/
+    package.json
+    server.js
+    db.js
+    authMiddleware.js
+    data/
+      defaultSubjects.js
+```
+
+## Important security note
+
+This is now backend-based auth, but it is still a prototype.
+
+Good:
+- Passwords are not stored in React.
+- Passwords are hashed.
+- User data is saved on the backend.
+- Users only receive their own subject data through authenticated API routes.
+
+Still needed before real deployment:
+- Use HTTPS.
+- Use a real database such as PostgreSQL, MySQL, MongoDB, or SQLite.
+- Store JWT in safer cookies instead of localStorage.
+- Add rate limiting.
+- Add password reset.
+- Add stronger validation.
+- Use a strong production `JWT_SECRET`.

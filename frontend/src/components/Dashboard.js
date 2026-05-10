@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import SubjectCard from "./SubjectCard";
 import NewSubjectCard from "./NewSubjectCard";
 
-function Dashboard({ subjects, onSelectSubject, onAddSubject, onResetDemoData }) {
+function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubject, onResetDemoData }) {
   const [showNewSubjectForm, setShowNewSubjectForm] = useState(false);
 
   return (
@@ -16,9 +16,21 @@ function Dashboard({ subjects, onSelectSubject, onAddSubject, onResetDemoData })
           </p>
         </div>
 
-        <button className="btn btn-outline-danger" onClick={onResetDemoData}>
-          Reset demo data
-        </button>
+        <div className="text-end">
+          <div className="small text-muted mb-2">
+            Logged in as <strong>{currentUser.username}</strong>
+          </div>
+
+          <div className="d-flex gap-2">
+            <button className="btn btn-outline-secondary" onClick={onLogout}>
+              Log out
+            </button>
+
+            <button className="btn btn-outline-danger" onClick={onResetDemoData}>
+              Clear my subjects
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="row g-3">
