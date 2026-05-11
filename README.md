@@ -1,21 +1,16 @@
-# Revision App v9 — Gemini AI Generate Topic
+# Revision App v12 — Big Upload Fix
 
-This version keeps the v7 user-file backend layout and changes the AI provider from OpenAI to Gemini.
+This version fixes common 300MB upload problems.
 
-## What changed
+## What changed from v11
 
-- Removed the OpenAI backend dependency.
-- Added Gemini API support through the backend.
-- The frontend still calls the same endpoint:
-  - `POST /api/ai/generate-topic`
-- Gemini returns a topic JSON object containing:
-  - summary
-  - notes
-  - flashcards
-  - quiz questions
-  - glossary
-- User can preview generated JSON.
-- User can save the generated topic into the current subject.
+- Frontend API calls now go directly to:
+  - `http://localhost:4000`
+- This avoids React dev server proxy issues with huge uploads.
+- Upload limit increased to 600MB per file.
+- Backend server timeouts increased for large local uploads.
+- Large extracted text is still split into chunks.
+- Gemini still only receives a manageable amount of text, not the whole giant file.
 
 ## Setup
 
@@ -25,26 +20,34 @@ From this folder:
 npm run install-all
 ```
 
-Then create:
+Create:
 
 ```txt
 backend/.env
 ```
 
-You can copy:
-
-```txt
-backend/.env.example
-```
-
-Add your Gemini API key:
+Use:
 
 ```txt
 PORT=4000
 JWT_SECRET=change-this-to-a-long-random-secret
 GEMINI_API_KEY=your-gemini-api-key-here
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-2.5-flash-lite
 ```
+
+Optional frontend env:
+
+```txt
+frontend/.env
+```
+
+Use:
+
+```txt
+REACT_APP_API_URL=http://localhost:4000
+```
+
+The app already defaults to that, so this is optional.
 
 ## Run
 
@@ -58,33 +61,20 @@ Open:
 http://localhost:3000
 ```
 
-Backend:
+## Important for 300MB files
+
+The upload may take a while. Keep the terminal open and watch the backend console.
+
+If a 300MB PDF is scanned/image-only, text extraction may fail because OCR is not included yet.
+
+## Big file flow
 
 ```txt
-http://localhost:4000
+Upload file
+→ backend stores temporary upload on disk
+→ backend extracts text
+→ backend saves extracted chunks in the user's folder
+→ frontend shows chunk cards
+→ user chooses a chunk
+→ Gemini generates from selected text
 ```
-
-## How to use AI
-
-1. Register or log in.
-2. Open a subject.
-3. Click `AI Generate`.
-4. Enter a topic name.
-5. Paste lecture text.
-6. Click `Generate Topic`.
-7. Review the preview.
-8. Click `Save Topic`.
-
-## Important
-
-The Gemini API key must only go in:
-
-```txt
-backend/.env
-```
-
-Never put it in React/frontend code.
-
-## Current limitation
-
-This version starts with pasted lecture text. PDF/PowerPoint/Word upload can be added later.

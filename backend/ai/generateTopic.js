@@ -1,5 +1,7 @@
 const topicSchema = require("./topicSchema");
 
+const MAX_AI_INPUT_CHARS = 80000;
+
 function makeSlug(value) {
   return String(value || "")
     .toLowerCase()
@@ -170,10 +172,12 @@ async function generateTopicFromLecture({ subjectName, topicName, lectureText })
     throw new Error("Please provide more lecture text before generating.");
   }
 
+  const trimmedLectureText = lectureText.trim().slice(0, MAX_AI_INPUT_CHARS);
+
   const parsedTopic = await callGemini({
     subjectName,
     topicName,
-    lectureText
+    lectureText: trimmedLectureText
   });
 
   return normaliseGeneratedTopic(parsedTopic, topicName);

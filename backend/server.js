@@ -166,6 +166,11 @@ app.delete("/api/subjects/:subjectId", requireAuth, (req, res) => {
   res.json({ subjects: savedSubjects });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Revision backend running on http://localhost:${PORT}`);
 });
+
+// Large local file uploads can take longer than the default timeout.
+server.requestTimeout = 15 * 60 * 1000;
+server.headersTimeout = 16 * 60 * 1000;
+server.keepAliveTimeout = 2 * 60 * 1000;

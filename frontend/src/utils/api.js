@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || "";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 const TOKEN_KEY = "revision-app-auth-token";
 const USER_KEY = "revision-app-auth-user";
@@ -125,4 +125,33 @@ export async function generateTopicWithAI({ subjectName, topicName, lectureText 
   });
 
   return data.topic;
+}
+
+
+export async function extractTextFromFile(file) {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/ai/extract-file`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || "Could not extract text from file.");
+  }
+
+  return data;
+}
+
+
+export async function fetchUploadChunk(uploadId, chunkIndex) {
+  const data = await request(`/api/ai/uploads/${uploadId}/chunks/${chunkIndex}`);
+  return data;
 }
