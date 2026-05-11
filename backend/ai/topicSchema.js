@@ -1,6 +1,5 @@
 const topicSchema = {
   type: "object",
-  additionalProperties: false,
   required: [
     "topicId",
     "topicName",
@@ -28,11 +27,8 @@ const topicSchema = {
     },
     notes: {
       type: "array",
-      minItems: 3,
-      maxItems: 8,
       items: {
         type: "object",
-        additionalProperties: false,
         required: ["noteId", "heading", "content"],
         properties: {
           noteId: { type: "string" },
@@ -43,11 +39,8 @@ const topicSchema = {
     },
     flashcards: {
       type: "array",
-      minItems: 5,
-      maxItems: 16,
       items: {
         type: "object",
-        additionalProperties: false,
         required: [
           "flashcardId",
           "question",
@@ -63,28 +56,22 @@ const topicSchema = {
           flashcardId: { type: "string" },
           question: { type: "string" },
           answer: { type: "string" },
-          difficulty: {
-            type: "string",
-            enum: ["easy", "medium", "hard"]
-          },
+          difficulty: { type: "string" },
           tags: {
             type: "array",
             items: { type: "string" }
           },
-          score: { type: "integer", enum: [0] },
-          correctCount: { type: "integer", enum: [0] },
-          incorrectCount: { type: "integer", enum: [0] },
-          lastReviewed: { type: "null" }
+          score: { type: "integer" },
+          correctCount: { type: "integer" },
+          incorrectCount: { type: "integer" },
+          lastReviewed: { type: "string" }
         }
       }
     },
     quizQuestions: {
       type: "array",
-      minItems: 3,
-      maxItems: 10,
       items: {
         type: "object",
-        additionalProperties: false,
         required: [
           "questionId",
           "type",
@@ -95,12 +82,10 @@ const topicSchema = {
         ],
         properties: {
           questionId: { type: "string" },
-          type: { type: "string", enum: ["multiple-choice"] },
+          type: { type: "string" },
           question: { type: "string" },
           options: {
             type: "array",
-            minItems: 4,
-            maxItems: 4,
             items: { type: "string" }
           },
           correctAnswer: { type: "string" },
@@ -110,11 +95,8 @@ const topicSchema = {
     },
     glossary: {
       type: "array",
-      minItems: 3,
-      maxItems: 12,
       items: {
         type: "object",
-        additionalProperties: false,
         required: ["term", "definition"],
         properties: {
           term: { type: "string" },

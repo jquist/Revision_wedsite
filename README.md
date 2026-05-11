@@ -1,15 +1,14 @@
-# Revision App v8 — AI Generate Topic
+# Revision App v9 — Gemini AI Generate Topic
 
-This version keeps the v7 user-file backend layout and adds an AI generation feature.
+This version keeps the v7 user-file backend layout and changes the AI provider from OpenAI to Gemini.
 
 ## What changed
 
-- Added backend OpenAI integration.
-- Added `POST /api/ai/generate-topic`.
-- Added structured JSON output for generated topics.
-- Added an `AI Generate` tab inside each subject.
-- User can paste lecture text.
-- AI returns:
+- Removed the OpenAI backend dependency.
+- Added Gemini API support through the backend.
+- The frontend still calls the same endpoint:
+  - `POST /api/ai/generate-topic`
+- Gemini returns a topic JSON object containing:
   - summary
   - notes
   - flashcards
@@ -38,13 +37,13 @@ You can copy:
 backend/.env.example
 ```
 
-Add your OpenAI API key:
+Add your Gemini API key:
 
 ```txt
 PORT=4000
 JWT_SECRET=change-this-to-a-long-random-secret
-OPENAI_API_KEY=your-openai-api-key-here
-OPENAI_MODEL=gpt-4.1-mini
+GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 ## Run
@@ -78,7 +77,7 @@ http://localhost:4000
 
 ## Important
 
-The OpenAI API key must only go in:
+The Gemini API key must only go in:
 
 ```txt
 backend/.env

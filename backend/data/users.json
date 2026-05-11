@@ -1,0 +1,10 @@
+{
+  "users": [
+    {
+      "userId": "ba044c3f-fc31-4bb1-9f2b-a6591d0206db",
+      "username": "jess",
+      "passwordHash": "$2a$12$ey97ZN0R2rPKmcuCvquHpOIR2QyO/RJFi3w1qOsU9B6pN4vfFy3fC",
+      "createdAt": "2026-05-10T23:40:52.372Z"
+    }
+  ]
+}
