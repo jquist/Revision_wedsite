@@ -9,7 +9,7 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
   const [selectedScores, setSelectedScores] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const allFlashcards = topic.flashcards || [];
+  const allFlashcards = useMemo(() => topic.flashcards || [], [topic.flashcards]);
 
   const filteredFlashcards = useMemo(() => {
     if (selectedScores.length === 0) {
