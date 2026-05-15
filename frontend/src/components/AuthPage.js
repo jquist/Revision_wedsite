@@ -68,7 +68,7 @@ function AuthPage({ onLogin }) {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="Example: jess@example.com"
+                placeholder="Example: email@example.com"
                 autoComplete="email"
               />
             </div>
