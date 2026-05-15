@@ -1,80 +1,138 @@
-# Revision App v12 — Big Upload Fix
+# Revision App — Vercel + Supabase Version
 
-This version fixes common 300MB upload problems.
+This is the no-AI deployment version of the revision app.
 
-## What changed from v11
+It uses:
 
-- Frontend API calls now go directly to:
-  - `http://localhost:4000`
-- This avoids React dev server proxy issues with huge uploads.
-- Upload limit increased to 600MB per file.
-- Backend server timeouts increased for large local uploads.
-- Large extracted text is still split into chunks.
-- Gemini still only receives a manageable amount of text, not the whole giant file.
+- React / Create React App for the website
+- Supabase Auth for sign up and log in
+- Supabase Postgres for saved subjects and progress
+- Vercel for frontend hosting
 
-## Setup
+There is no custom Express backend in this version.
 
-From this folder:
+## Project structure
+
+```txt
+revision-app-supabase-vercel/
+  frontend/
+    public/
+    src/
+    package.json
+    .env.example
+  supabase/
+    schema.sql
+  package.json
+  README.md
+```
+
+## Local setup
+
+### 1. Create a Supabase project
+
+Create a new project in Supabase.
+
+Then copy:
+
+- Project URL
+- anon/public key
+
+You find them in Supabase project settings under API.
+
+### 2. Create the database table
+
+Open Supabase SQL Editor and run:
+
+```txt
+supabase/schema.sql
+```
+
+This creates the `subjects` table and Row Level Security policies.
+
+### 3. Add frontend environment variables
+
+Copy:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+Then fill in:
+
+```env
+REACT_APP_SUPABASE_URL=https://your-project-ref.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+Do not put the Supabase service role key in React.
+
+### 4. Install and run
+
+From the project root:
 
 ```bash
 npm run install-all
-```
-
-Create:
-
-```txt
-backend/.env
-```
-
-Use:
-
-```txt
-PORT=4000
-JWT_SECRET=change-this-to-a-long-random-secret
-GEMINI_API_KEY=your-gemini-api-key-here
-GEMINI_MODEL=gemini-2.5-flash-lite
-```
-
-Optional frontend env:
-
-```txt
-frontend/.env
-```
-
-Use:
-
-```txt
-REACT_APP_API_URL=http://localhost:4000
-```
-
-The app already defaults to that, so this is optional.
-
-## Run
-
-```bash
 npm start
 ```
 
-Open:
+Or directly:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+The app should run on:
 
 ```txt
 http://localhost:3000
 ```
 
-## Important for 300MB files
+## Auth note
 
-The upload may take a while. Keep the terminal open and watch the backend console.
+Supabase may require new users to confirm their email before logging in.
 
-If a 300MB PDF is scanned/image-only, text extraction may fail because OCR is not included yet.
-
-## Big file flow
+For quick local testing, you can turn email confirmation off in Supabase:
 
 ```txt
-Upload file
-→ backend stores temporary upload on disk
-→ backend extracts text
-→ backend saves extracted chunks in the user's folder
-→ frontend shows chunk cards
-→ user chooses a chunk
-→ Gemini generates from selected text
+Authentication → Sign In / Providers → Email → Confirm email = off
 ```
+
+For production, it is usually better to keep email confirmation on.
+
+## Vercel settings
+
+When deploying on Vercel:
+
+```txt
+Root Directory: frontend
+Build Command: npm run build
+Output Directory: build
+```
+
+Add these Vercel environment variables:
+
+```env
+REACT_APP_SUPABASE_URL=https://your-project-ref.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+Then redeploy.
+
+## Supabase table design
+
+The app saves each subject as one JSONB row:
+
+```txt
+subjects
+- id
+- user_id
+- subject_id
+- subject_name
+- subject
+- created_at
+- updated_at
+```
+
+The full subject object contains the topics, notes, flashcards, quiz questions, glossary, and card progress.

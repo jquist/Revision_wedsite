@@ -4,11 +4,9 @@ import FlashcardPractice from "../components/FlashcardPractice";
 import PracticeTest from "../components/PracticeTest";
 import RevisionNotes from "../components/RevisionNotes";
 import Glossary from "../components/Glossary";
-import AIGenerateTopic from "../components/AIGenerateTopic";
 import {
   ALL_TOPICS_ID,
   addFlashcard,
-  addTopicToSubject,
   findTopicById,
   updateFlashcardProgress,
   resetFlashcardStats,
@@ -34,14 +32,6 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
   function handleAddFlashcard(newCard) {
     const updatedSubject = addFlashcard(subject, selectedTopicId, newCard);
     onUpdateSubject(updatedSubject);
-  }
-
-
-  function handleSaveGeneratedTopic(generatedTopic) {
-    const updatedSubject = addTopicToSubject(subject, generatedTopic);
-    onUpdateSubject(updatedSubject);
-    setSelectedTopicId(generatedTopic.topicId);
-    setActiveTab("flashcards");
   }
 
 
@@ -101,15 +91,6 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
 
         <button
           className={`btn ${
-            activeTab === "ai" ? "btn-primary" : "btn-outline-primary"
-          }`}
-          onClick={() => setActiveTab("ai")}
-        >
-          AI Generate
-        </button>
-
-        <button
-          className={`btn ${
             activeTab === "glossary" ? "btn-primary" : "btn-outline-primary"
           }`}
           onClick={() => setActiveTab("glossary")}
@@ -133,13 +114,6 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
       {activeTab === "notes" && <RevisionNotes topic={selectedTopic} />}
 
       {activeTab === "glossary" && <Glossary topic={selectedTopic} />}
-
-      {activeTab === "ai" && (
-        <AIGenerateTopic
-          subject={subject}
-          onSaveGeneratedTopic={handleSaveGeneratedTopic}
-        />
-      )}
     </div>
   );
 }

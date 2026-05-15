@@ -1,157 +1,241 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+import { subjectManifest } from "../data/subjectManifest";
+import { supabase } from "./supabaseClient";
 
-const TOKEN_KEY = "revision-app-auth-token";
-const USER_KEY = "revision-app-auth-user";
+function formatSupabaseError(error, fallbackMessage = "Something went wrong.") {
+  if (!error) {
+    return fallbackMessage;
+  }
 
-export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return error.message || fallbackMessage;
 }
 
-export function getSavedUser() {
-  const savedUser = localStorage.getItem(USER_KEY);
-
-  if (!savedUser) {
+function mapUser(user) {
+  if (!user) {
     return null;
   }
 
-  try {
-    return JSON.parse(savedUser);
-  } catch {
-    return null;
+  const email = user.email || "";
+
+  return {
+    userId: user.id,
+    email,
+    username: email ? email.split("@")[0] : "User",
+  };
+}
+
+async function getSupabaseUser() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not read the current user."));
   }
+
+  return data.user;
 }
 
-export function saveSession({ token, user }) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+async function requireUser() {
+  const user = await getSupabaseUser();
+
+  if (!user) {
+    throw new Error("Please log in again.");
+  }
+
+  return user;
 }
 
-export function clearSession() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-}
-
-async function request(path, options = {}) {
-  const token = getToken();
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
+function prepareSubjectRow(userId, subject) {
+  return {
+    user_id: userId,
+    subject_id: subject.subjectId,
+    subject_name: subject.subjectName || "Untitled subject",
+    subject: {
+      ...subject,
+      updatedAt: new Date().toISOString(),
     },
-  });
+  };
+}
 
-  const data = await response.json().catch(() => ({}));
+async function seedStarterSubjectsForCurrentUser() {
+  const user = await requireUser();
 
-  if (!response.ok) {
-    throw new Error(data.message || "Something went wrong.");
+  const rows = subjectManifest.map((subject) =>
+    prepareSubjectRow(user.id, {
+      ...subject,
+      subjectId: `${subject.subjectId}-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+  );
+
+  if (rows.length === 0) {
+    return [];
   }
 
-  return data;
+  const { error } = await supabase.from("subjects").insert(rows);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not create starter subjects."));
+  }
+
+  return fetchSubjects();
 }
 
-export async function registerUser({ username, password }) {
-  const data = await request("/api/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ username, password }),
-  });
+export async function getCurrentUser() {
+  const { data, error } = await supabase.auth.getSession();
 
-  saveSession(data);
-  return data;
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not read the saved session."));
+  }
+
+  return mapUser(data.session?.user || null);
 }
 
-export async function loginUser({ username, password }) {
-  const data = await request("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ username, password }),
+export function onAuthStateChange(callback) {
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    callback(mapUser(session?.user || null));
   });
 
-  saveSession(data);
-  return data;
+  return () => data.subscription.unsubscribe();
+}
+
+export async function clearSession() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not log out."));
+  }
+}
+
+export async function registerUser({ email, password }) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+
+  if (!cleanEmail || !password) {
+    throw new Error("Please enter an email and password.");
+  }
+
+  if (password.length < 6) {
+    throw new Error("Password must be at least 6 characters.");
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: cleanEmail,
+    password,
+  });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not create your account."));
+  }
+
+  if (!data.session) {
+    return {
+      user: null,
+      needsEmailConfirmation: true,
+      message:
+        "Account created. Check your email to confirm it, then come back and log in.",
+    };
+  }
+
+  await seedStarterSubjectsForCurrentUser();
+
+  return {
+    user: mapUser(data.user),
+  };
+}
+
+export async function loginUser({ email, password }) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+
+  if (!cleanEmail || !password) {
+    throw new Error("Please enter an email and password.");
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: cleanEmail,
+    password,
+  });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Email or password is incorrect."));
+  }
+
+  return {
+    user: mapUser(data.user),
+  };
 }
 
 export async function fetchSubjects() {
-  const data = await request("/api/subjects");
-  return data.subjects;
+  await requireUser();
+
+  const { data, error } = await supabase
+    .from("subjects")
+    .select("subject")
+    .order("subject_name", { ascending: true });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not load your subjects."));
+  }
+
+  return (data || []).map((row) => row.subject);
 }
 
 export async function saveAllSubjects(subjects) {
-  const data = await request("/api/subjects", {
-    method: "PUT",
-    body: JSON.stringify({ subjects }),
-  });
+  const user = await requireUser();
 
-  return data.subjects;
+  const { error: deleteError } = await supabase
+    .from("subjects")
+    .delete()
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    throw new Error(formatSupabaseError(deleteError, "Could not clear your subjects."));
+  }
+
+  if (!subjects.length) {
+    return [];
+  }
+
+  const rows = subjects.map((subject) => prepareSubjectRow(user.id, subject));
+
+  const { error: insertError } = await supabase.from("subjects").insert(rows);
+
+  if (insertError) {
+    throw new Error(formatSupabaseError(insertError, "Could not save your subjects."));
+  }
+
+  return fetchSubjects();
 }
 
 export async function saveSubject(subject) {
-  const data = await request(`/api/subjects/${subject.subjectId}`, {
-    method: "PUT",
-    body: JSON.stringify({ subject }),
-  });
+  const user = await requireUser();
 
-  return data.subjects;
+  const { error } = await supabase
+    .from("subjects")
+    .upsert(prepareSubjectRow(user.id, subject), {
+      onConflict: "user_id,subject_id",
+    });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not save this subject."));
+  }
+
+  return fetchSubjects();
 }
 
 export async function createSubject(subject) {
-  const data = await request("/api/subjects", {
-    method: "POST",
-    body: JSON.stringify({ subject }),
-  });
-
-  return data.subjects;
+  return saveSubject(subject);
 }
-
 
 export async function deleteSubject(subjectId) {
-  const data = await request(`/api/subjects/${subjectId}`, {
-    method: "DELETE",
-  });
+  await requireUser();
 
-  return data.subjects;
-}
+  const { error } = await supabase
+    .from("subjects")
+    .delete()
+    .eq("subject_id", subjectId);
 
-
-export async function generateTopicWithAI({ subjectName, topicName, lectureText }) {
-  const data = await request("/api/ai/generate-topic", {
-    method: "POST",
-    body: JSON.stringify({
-      subjectName,
-      topicName,
-      lectureText,
-    }),
-  });
-
-  return data.topic;
-}
-
-
-export async function extractTextFromFile(file) {
-  const token = getToken();
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await fetch(`${API_BASE_URL}/api/ai/extract-file`, {
-    method: "POST",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: formData,
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.message || "Could not extract text from file.");
+  if (error) {
+    throw new Error(formatSupabaseError(error, "Could not delete this subject."));
   }
 
-  return data;
-}
-
-
-export async function fetchUploadChunk(uploadId, chunkIndex) {
-  const data = await request(`/api/ai/uploads/${uploadId}/chunks/${chunkIndex}`);
-  return data;
+  return fetchSubjects();
 }

@@ -236,28 +236,3 @@ export function resetFlashcardStats(subject, topicId, flashcardIdsToReset = null
     }),
   };
 }
-
-
-export function addTopicToSubject(subject, generatedTopic) {
-  const existingTopicIds = new Set(subject.topics.map((topic) => topic.topicId));
-  let topicId = generatedTopic.topicId || makeSlug(generatedTopic.topicName);
-  let finalTopicId = topicId;
-  let counter = 2;
-
-  while (existingTopicIds.has(finalTopicId)) {
-    finalTopicId = `${topicId}-${counter}`;
-    counter += 1;
-  }
-
-  return {
-    ...subject,
-    updatedAt: new Date().toISOString().slice(0, 10),
-    topics: [
-      ...subject.topics,
-      {
-        ...generatedTopic,
-        topicId: finalTopicId,
-      },
-    ],
-  };
-}

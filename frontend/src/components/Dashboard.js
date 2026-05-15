@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import SubjectCard from "./SubjectCard";
 import NewSubjectCard from "./NewSubjectCard";
 
-function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubject, onDeleteSubject, onResetDemoData }) {
+function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubject, onDeleteSubject, onClearAllSubjects }) {
   const [showNewSubjectForm, setShowNewSubjectForm] = useState(false);
 
   return (
@@ -11,14 +11,14 @@ function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubj
         <div>
           <h1 className="mb-2">Revision Dashboard</h1>
           <p className="text-muted mb-0">
-            Each subject is loaded from its own JSON-style data. You can also make
-            new subjects and they save in localStorage.
+            Create subjects, add flashcards, practise them, and keep your progress
+            saved to your Supabase account.
           </p>
         </div>
 
         <div className="text-end">
           <div className="small text-muted mb-2">
-            Logged in as <strong>{currentUser.username}</strong>
+            Logged in as <strong>{currentUser.email || currentUser.username}</strong>
           </div>
 
           <div className="d-flex gap-2">
@@ -26,12 +26,18 @@ function Dashboard({ subjects, currentUser, onLogout, onSelectSubject, onAddSubj
               Log out
             </button>
 
-            <button className="btn btn-outline-danger" onClick={onResetDemoData}>
+            <button className="btn btn-outline-danger" onClick={onClearAllSubjects}>
               Clear my subjects
             </button>
           </div>
         </div>
       </div>
+
+      {subjects.length === 0 && (
+        <div className="alert alert-light border">
+          You do not have any subjects yet. Use the new subject card to create your first one.
+        </div>
+      )}
 
       <div className="row g-3">
         {subjects.map((subject) => (

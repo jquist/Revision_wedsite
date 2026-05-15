@@ -8,21 +8,61 @@ import {
   createSubject,
   deleteSubject,
   fetchSubjects,
-  getSavedUser,
+  getCurrentUser,
+  onAuthStateChange,
   saveAllSubjects,
   saveSubject,
 } from "./utils/api";
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(() => getSavedUser());
+  const [currentUser, setCurrentUser] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [error, setError] = useState("");
 
   const selectedSubject = subjects.find(
     (subject) => subject.subjectId === selectedSubjectId
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkSession() {
+      try {
+        const savedUser = await getCurrentUser();
+
+        if (isMounted) {
+          setCurrentUser(savedUser);
+        }
+      } catch (sessionError) {
+        if (isMounted) {
+          setError(sessionError.message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsCheckingAuth(false);
+        }
+      }
+    }
+
+    checkSession();
+
+    const unsubscribe = onAuthStateChange((user) => {
+      setCurrentUser(user);
+      setSelectedSubjectId(null);
+
+      if (!user) {
+        setSubjects([]);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   async function loadSubjects() {
     if (!currentUser) {
@@ -37,9 +77,6 @@ function App() {
       setSubjects(loadedSubjects);
     } catch (loadError) {
       setError(loadError.message);
-      clearSession();
-      setCurrentUser(null);
-      setSubjects([]);
     } finally {
       setIsLoadingSubjects(false);
     }
@@ -55,11 +92,16 @@ function App() {
     setSelectedSubjectId(null);
   }
 
-  function handleLogout() {
-    clearSession();
-    setCurrentUser(null);
-    setSubjects([]);
-    setSelectedSubjectId(null);
+  async function handleLogout() {
+    try {
+      await clearSession();
+    } catch (logoutError) {
+      setError(logoutError.message);
+    } finally {
+      setCurrentUser(null);
+      setSubjects([]);
+      setSelectedSubjectId(null);
+    }
   }
 
   async function updateSubject(updatedSubject) {
@@ -97,7 +139,6 @@ function App() {
     }
   }
 
-
   async function handleDeleteSubject(subjectId) {
     const previousSubjects = subjects;
 
@@ -118,7 +159,7 @@ function App() {
     }
   }
 
-  async function resetDemoData() {
+  async function clearAllSubjects() {
     try {
       const savedSubjects = await saveAllSubjects([]);
       setSubjects(savedSubjects);
@@ -126,6 +167,14 @@ function App() {
     } catch (saveError) {
       setError(saveError.message);
     }
+  }
+
+  if (isCheckingAuth) {
+    return (
+      <div className="container py-4">
+        <div className="alert alert-info">Checking your login...</div>
+      </div>
+    );
   }
 
   if (!currentUser) {
@@ -162,7 +211,7 @@ function App() {
           onSelectSubject={(subject) => setSelectedSubjectId(subject.subjectId)}
           onAddSubject={addSubject}
           onDeleteSubject={handleDeleteSubject}
-          onResetDemoData={resetDemoData}
+          onClearAllSubjects={clearAllSubjects}
         />
       )}
     </>

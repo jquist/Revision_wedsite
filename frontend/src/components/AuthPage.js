@@ -3,9 +3,10 @@ import { loginUser, registerUser } from "../utils/api";
 
 function AuthPage({ onLogin }) {
   const [mode, setMode] = useState("login");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("danger");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isLogin = mode === "login";
@@ -14,14 +15,22 @@ function AuthPage({ onLogin }) {
     event.preventDefault();
     setIsSubmitting(true);
     setMessage("");
+    setMessageType("danger");
 
     try {
       const result = isLogin
-        ? await loginUser({ username, password })
-        : await registerUser({ username, password });
+        ? await loginUser({ email, password })
+        : await registerUser({ email, password });
+
+      if (result.needsEmailConfirmation) {
+        setMessageType("info");
+        setMessage(result.message);
+        return;
+      }
 
       onLogin(result.user);
     } catch (error) {
+      setMessageType("danger");
       setMessage(error.message);
     } finally {
       setIsSubmitting(false);
@@ -31,6 +40,7 @@ function AuthPage({ onLogin }) {
   function switchMode(nextMode) {
     setMode(nextMode);
     setMessage("");
+    setMessageType("danger");
   }
 
   return (
@@ -42,22 +52,24 @@ function AuthPage({ onLogin }) {
           <p className="text-muted">
             {isLogin
               ? "Log in to see your saved subjects and progress."
-              : "Create an account so your revision data is saved on the backend."}
+              : "Create an account so your revision data is saved in Supabase."}
           </p>
 
           <div className="alert alert-info small">
-            Backend auth is now being used. Passwords are hashed on the server.
+            This version uses Supabase Auth and Supabase Database. No custom
+            backend is needed for the no-AI version.
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label">Username</label>
+              <label className="form-label">Email</label>
               <input
                 className="form-control"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder="Example: jess"
-                autoComplete="username"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="Example: jess@example.com"
+                autoComplete="email"
               />
             </div>
 
@@ -74,7 +86,7 @@ function AuthPage({ onLogin }) {
             </div>
 
             {message && (
-              <div className="alert alert-danger py-2">{message}</div>
+              <div className={`alert alert-${messageType} py-2`}>{message}</div>
             )}
 
             <button className="btn btn-primary w-100" type="submit" disabled={isSubmitting}>
