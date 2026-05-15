@@ -1,125 +1,87 @@
 import React, { useState } from "react";
-import { loginUser, registerUser } from "../utils/api";
+import { signInWithEmail, signUpWithEmail } from "../utils/authHelpers";
 
 function AuthPage({ onLogin }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("danger");
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const isLogin = mode === "login";
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setIsSubmitting(true);
+    setError("");
     setMessage("");
-    setMessageType("danger");
+    setIsSubmitting(true);
 
     try {
-      const result = isLogin
-        ? await loginUser({ email, password })
-        : await registerUser({ email, password });
-
-      if (result.needsEmailConfirmation) {
-        setMessageType("info");
-        setMessage(result.message);
-        return;
+      if (mode === "signup") {
+        const data = await signUpWithEmail(email, password);
+        if (data.session?.user) {
+          onLogin(data.session.user);
+        } else {
+          setMessage("Account created. Check your email if Supabase asks for confirmation.");
+        }
+      } else {
+        const data = await signInWithEmail(email, password);
+        onLogin(data.user);
       }
-
-      onLogin(result.user);
-    } catch (error) {
-      setMessageType("danger");
-      setMessage(error.message);
+    } catch (authError) {
+      setError(authError.message);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function switchMode(nextMode) {
-    setMode(nextMode);
-    setMessage("");
-    setMessageType("danger");
-  }
-
   return (
-    <div className="auth-page">
-      <div className="auth-card card shadow-sm">
-        <div className="card-body">
-          <h1 className="mb-2">Revision App</h1>
+    <main className="auth-page">
+      <div className="card shadow-sm auth-card">
+        <div className="card-body p-4">
+          <h1 className="h3 mb-2">Revision App</h1>
+          <p className="text-muted">Log in to save your subjects, flashcards, and tests.</p>
 
-          <p className="text-muted">
-            {isLogin
-              ? "Log in to see your saved subjects and progress."
-              : "Create an account so your revision data is saved in Supabase."}
-          </p>
-
-          <div className="alert alert-info small">
-            This version uses Supabase Auth and Supabase Database. No custom
-            backend is needed for the no-AI version.
-          </div>
+          {error && <div className="alert alert-danger">{error}</div>}
+          {message && <div className="alert alert-info">{message}</div>}
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label">Email</label>
+              <label className="form-label" htmlFor="email">Email</label>
               <input
+                id="email"
                 className="form-control"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="Example: jess@example.com"
-                autoComplete="email"
+                required
               />
             </div>
-
             <div className="mb-3">
-              <label className="form-label">Password</label>
+              <label className="form-label" htmlFor="password">Password</label>
               <input
+                id="password"
                 className="form-control"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="At least 6 characters"
-                autoComplete={isLogin ? "current-password" : "new-password"}
+                minLength="6"
+                required
               />
             </div>
-
-            {message && (
-              <div className={`alert alert-${messageType} py-2`}>{message}</div>
-            )}
-
-            <button className="btn btn-primary w-100" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Please wait..." : isLogin ? "Log In" : "Create Account"}
+            <button className="btn btn-success w-100" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Working..." : mode === "login" ? "Log in" : "Sign up"}
             </button>
           </form>
 
-          <hr />
-
-          {isLogin ? (
-            <p className="mb-0 text-center">
-              No account yet?{" "}
-              <button
-                className="btn btn-link p-0"
-                onClick={() => switchMode("signup")}
-              >
-                Create one
-              </button>
-            </p>
-          ) : (
-            <p className="mb-0 text-center">
-              Already have an account?{" "}
-              <button
-                className="btn btn-link p-0"
-                onClick={() => switchMode("login")}
-              >
-                Log in
-              </button>
-            </p>
-          )}
+          <button
+            className="btn btn-link w-100 mt-3"
+            onClick={() => setMode((current) => (current === "login" ? "signup" : "login"))}
+          >
+            {mode === "login" ? "Need an account? Sign up" : "Already have an account? Log in"}
+          </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

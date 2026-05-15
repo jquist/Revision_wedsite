@@ -6,7 +6,6 @@ function makeIdFromText(value, fallback) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)+/g, "");
-
   return clean || String(fallback);
 }
 
@@ -16,44 +15,67 @@ function stableOptionId(questionId, optionText, index) {
 
 function shuffleArray(items) {
   const shuffled = [...items];
-
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
     const randomIndex = Math.floor(Math.random() * (index + 1));
     [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
   }
-
   return shuffled;
 }
 
-function normaliseQuestion(question, index) {
-  const questionId = question.questionId || question.id || `question-${index + 1}`;
-  const options = (question.options || []).map((option, optionIndex) => {
-    if (typeof option === "string") {
-      return {
-        optionId: stableOptionId(questionId, option, optionIndex),
-        text: option,
-      };
-    }
+function optionTextFromValue(option) {
+  if (typeof option === "string") return option;
+  return String(option?.text || option?.label || option?.answer || option?.value || "").trim();
+}
 
-    const text = String(option?.text || option?.label || option?.answer || "").trim();
+function normaliseQuestion(question, index) {
+  const questionId = question.questionId || question.quizQuestionId || question.id || `question-${index + 1}`;
+  const rawOptions = Array.isArray(question.options) ? question.options : [];
+
+  const options = rawOptions.map((option, optionIndex) => {
+    const text = optionTextFromValue(option);
+    const originalLetter = String.fromCharCode(65 + optionIndex);
 
     return {
-      ...option,
-      optionId:
-        option?.optionId ||
-        option?.id ||
-        stableOptionId(questionId, text || `option-${optionIndex + 1}`, optionIndex),
+      ...(typeof option === "object" && option !== null ? option : {}),
+      optionId: option?.optionId || option?.id || stableOptionId(questionId, text || `option-${optionIndex + 1}`, optionIndex),
       text,
+      originalIndex: optionIndex,
+      originalLetter,
+      isCorrect: Boolean(option?.isCorrect || option?.correct),
     };
   });
 
-  const oldCorrectText = question.correctAnswer || question.answer || "";
-  let correctOptionId =
-    question.correctOptionId || question.correct_option_id || question.correct_option || "";
+  const answerValue = String(
+    question.correctAnswer ||
+      question.answer ||
+      question.correct_answer ||
+      question.correctOption ||
+      ""
+  ).trim();
 
-  if (!correctOptionId && oldCorrectText) {
-    const matchingOption = options.find((option) => option.text === oldCorrectText);
-    correctOptionId = matchingOption?.optionId || "";
+  let correctOptionId = question.correctOptionId || question.correct_option_id || question.correct_option || "";
+
+  if (!correctOptionId) {
+    const explicitlyCorrect = options.find((option) => option.isCorrect);
+    if (explicitlyCorrect) correctOptionId = explicitlyCorrect.optionId;
+  }
+
+  if (!correctOptionId && answerValue) {
+    const exactTextMatch = options.find((option) => option.text === answerValue);
+    if (exactTextMatch) correctOptionId = exactTextMatch.optionId;
+  }
+
+  if (!correctOptionId && answerValue) {
+    const caseInsensitiveMatch = options.find(
+      (option) => option.text.toLowerCase() === answerValue.toLowerCase()
+    );
+    if (caseInsensitiveMatch) correctOptionId = caseInsensitiveMatch.optionId;
+  }
+
+  // Supports old data where answer is "A", "B", "C", etc.
+  if (!correctOptionId && /^[A-Z]$/i.test(answerValue)) {
+    const letterIndex = answerValue.toUpperCase().charCodeAt(0) - 65;
+    correctOptionId = options[letterIndex]?.optionId || "";
   }
 
   const correctOption = options.find((option) => option.optionId === correctOptionId);
@@ -63,19 +85,17 @@ function normaliseQuestion(question, index) {
     questionId,
     options: shuffleArray(options),
     correctOptionId,
-    correctAnswerText: correctOption?.text || oldCorrectText,
+    correctAnswerText: correctOption?.text || answerValue,
   };
 }
 
 function PracticeTest({ topic }) {
-  const questions = topic.quizQuestions || [];
+  const questions = topic.quizQuestions || topic.quiz_questions || [];
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   const preparedQuestions = useMemo(
     () => questions.map(normaliseQuestion),
-    // Re-shuffle when the selected topic or its question list changes.
-    // This stops the correct answer living in the same visual position every attempt.
     [topic.topicId, questions]
   );
 
@@ -89,30 +109,31 @@ function PracticeTest({ topic }) {
   }
 
   function handleAnswer(questionId, optionId) {
-    setAnswers({
-      ...answers,
+    setAnswers((currentAnswers) => ({
+      ...currentAnswers,
       [questionId]: optionId,
-    });
+    }));
   }
 
   const score = preparedQuestions.filter(
     (question) => answers[question.questionId] === question.correctOptionId
   ).length;
 
+  const answeredCount = Object.keys(answers).length;
+
   return (
     <div>
       <h2>Practice Test</h2>
+      <p className="text-muted">
+        Pick one answer for each question. The answer order is shuffled, but the correct answer is tracked safely.
+      </p>
 
       {preparedQuestions.map((question, index) => (
         <div className="card shadow-sm mb-3" key={question.questionId}>
           <div className="card-body">
             <h5>
               {index + 1}. {question.question}
-              {question.topicName ? (
-                <span className="badge text-bg-secondary ms-2">
-                  {question.topicName}
-                </span>
-              ) : null}
+              {question.topicName ? <span className="badge text-bg-secondary ms-2">{question.topicName}</span> : null}
             </h5>
 
             {question.options.map((option) => (
@@ -120,16 +141,12 @@ function PracticeTest({ topic }) {
                 <input
                   className="form-check-input"
                   type="radio"
-                  name={question.questionId}
+                  name={`question-${question.questionId}`}
                   id={`${question.questionId}-${option.optionId}`}
                   checked={answers[question.questionId] === option.optionId}
                   onChange={() => handleAnswer(question.questionId, option.optionId)}
                 />
-
-                <label
-                  className="form-check-label"
-                  htmlFor={`${question.questionId}-${option.optionId}`}
-                >
+                <label className="form-check-label" htmlFor={`${question.questionId}-${option.optionId}`}>
                   {option.text}
                 </label>
               </div>
@@ -141,13 +158,10 @@ function PracticeTest({ topic }) {
                   <span className="text-success">Correct</span>
                 ) : (
                   <span className="text-danger">
-                    Incorrect. Correct answer: {question.correctAnswerText}
+                    Incorrect. Correct answer: {question.correctAnswerText || "not set"}
                   </span>
                 )}
-
-                {question.explanation && (
-                  <p className="small text-muted mt-2">{question.explanation}</p>
-                )}
+                {question.explanation && <p className="small text-muted mt-2">{question.explanation}</p>}
               </div>
             )}
           </div>
@@ -157,6 +171,10 @@ function PracticeTest({ topic }) {
       <button className="btn btn-primary" onClick={() => setSubmitted(true)}>
         Submit Test
       </button>
+
+      <span className="ms-3 small text-muted">
+        Answered {answeredCount} / {preparedQuestions.length}
+      </span>
 
       {submitted && (
         <div className="alert alert-info mt-3">

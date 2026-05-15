@@ -24,13 +24,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
   const selectedTopic = findTopicById(subject, selectedTopicId);
 
   function handleMarkFlashcard(topicId, flashcardId, wasCorrect) {
-    const updatedSubject = updateFlashcardProgress(
-      subject,
-      topicId,
-      flashcardId,
-      wasCorrect
-    );
-
+    const updatedSubject = updateFlashcardProgress(subject, topicId, flashcardId, wasCorrect);
     onUpdateSubject(updatedSubject);
   }
 
@@ -41,12 +35,8 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
 
   function handleAddTopic(event) {
     event.preventDefault();
-
     const cleanName = newTopicName.trim();
-
-    if (!cleanName) {
-      return;
-    }
+    if (!cleanName) return;
 
     const newTopic = createBlankTopic({
       topicName: cleanName,
@@ -55,7 +45,6 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
     });
 
     const updatedSubject = addTopic(subject, newTopic);
-
     onUpdateSubject(updatedSubject);
     setSelectedTopicId(newTopic.topicId);
     setActiveTab("flashcards");
@@ -64,17 +53,10 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
     setShowNewTopicForm(false);
   }
 
-
   function handleRefreshCardStats(visibleFlashcardIds) {
-    const updatedSubject = resetFlashcardStats(
-      subject,
-      selectedTopicId,
-      visibleFlashcardIds
-    );
-
+    const updatedSubject = resetFlashcardStats(subject, selectedTopicId, visibleFlashcardIds);
     onUpdateSubject(updatedSubject);
   }
-
 
   return (
     <div className="container py-4">
@@ -87,18 +69,10 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
 
       <div className="row g-2 align-items-end mb-3">
         <div className="col-md">
-          <TopicSelector
-            subject={subject}
-            selectedTopicId={selectedTopicId}
-            onSelectTopic={setSelectedTopicId}
-          />
+          <TopicSelector subject={subject} selectedTopicId={selectedTopicId} onSelectTopic={setSelectedTopicId} />
         </div>
-
         <div className="col-md-auto mb-3">
-          <button
-            className="btn btn-success"
-            onClick={() => setShowNewTopicForm((isOpen) => !isOpen)}
-          >
+          <button className="btn btn-success" onClick={() => setShowNewTopicForm((isOpen) => !isOpen)}>
             {showNewTopicForm ? "Cancel New Topic" : "+ New Topic"}
           </button>
         </div>
@@ -108,11 +82,8 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
         <form className="card revision-card shadow-sm mb-4" onSubmit={handleAddTopic}>
           <div className="card-body">
             <h2 className="h5">Create a new topic</h2>
-
             <div className="mb-3">
-              <label className="form-label" htmlFor="new-topic-name">
-                Topic name
-              </label>
+              <label className="form-label" htmlFor="new-topic-name">Topic name</label>
               <input
                 id="new-topic-name"
                 className="form-control"
@@ -121,11 +92,8 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
                 placeholder="e.g. Week 1 - Networking Basics"
               />
             </div>
-
             <div className="mb-3">
-              <label className="form-label" htmlFor="new-topic-summary">
-                Summary / description optional
-              </label>
+              <label className="form-label" htmlFor="new-topic-summary">Summary / description optional</label>
               <textarea
                 id="new-topic-summary"
                 className="form-control"
@@ -135,12 +103,10 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
                 placeholder="Briefly describe what this topic is for."
               />
             </div>
-
             <div className="d-flex gap-2">
               <button className="btn btn-primary" type="submit" disabled={!newTopicName.trim()}>
                 Create Topic
               </button>
-
               <button
                 className="btn btn-outline-secondary"
                 type="button"
@@ -159,36 +125,25 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
 
       <div className="btn-group flex-wrap mb-4">
         <button
-          className={`btn ${
-            activeTab === "flashcards" ? "btn-primary" : "btn-outline-primary"
-          }`}
+          className={`btn ${activeTab === "flashcards" ? "btn-primary" : "btn-outline-primary"}`}
           onClick={() => setActiveTab("flashcards")}
         >
           Flashcards
         </button>
-
         <button
-          className={`btn ${
-            activeTab === "test" ? "btn-primary" : "btn-outline-primary"
-          }`}
+          className={`btn ${activeTab === "test" ? "btn-primary" : "btn-outline-primary"}`}
           onClick={() => setActiveTab("test")}
         >
           Practice Test
         </button>
-
         <button
-          className={`btn ${
-            activeTab === "notes" ? "btn-primary" : "btn-outline-primary"
-          }`}
+          className={`btn ${activeTab === "notes" ? "btn-primary" : "btn-outline-primary"}`}
           onClick={() => setActiveTab("notes")}
         >
           Notes
         </button>
-
         <button
-          className={`btn ${
-            activeTab === "glossary" ? "btn-primary" : "btn-outline-primary"
-          }`}
+          className={`btn ${activeTab === "glossary" ? "btn-primary" : "btn-outline-primary"}`}
           onClick={() => setActiveTab("glossary")}
         >
           Glossary
@@ -204,11 +159,8 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
           onRefreshCardStats={handleRefreshCardStats}
         />
       )}
-
       {activeTab === "test" && <PracticeTest topic={selectedTopic} />}
-
       {activeTab === "notes" && <RevisionNotes topic={selectedTopic} />}
-
       {activeTab === "glossary" && <Glossary topic={selectedTopic} />}
     </div>
   );

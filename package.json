@@ -1,10 +1,7 @@
 {
-  "name": "revision-app-supabase-vercel",
-  "version": "1.0.0",
-  "private": true,
   "scripts": {
-    "install-all": "npm --prefix frontend install",
-    "start": "npm --prefix frontend start",
-    "build": "npm --prefix frontend build"
+    "install-all": "cd frontend && npm install",
+    "start": "cd frontend && npm start",
+    "build": "cd frontend && npm run build"
   }
 }

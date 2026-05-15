@@ -10,15 +10,18 @@ function Glossary({ topic }) {
   return (
     <div>
       <h2>Glossary</h2>
-
-      {glossary.map((item) => (
-        <div className="card shadow-sm mb-3" key={item.term}>
-          <div className="card-body">
-            <h4>{item.term}</h4>
-            <p>{item.definition}</p>
+      <div className="row g-3">
+        {glossary.map((item, index) => (
+          <div className="col-md-6" key={`${item.term}-${index}`}>
+            <div className="card shadow-sm revision-card h-100">
+              <div className="card-body">
+                <h3 className="h5">{item.term}</h3>
+                <p className="mb-0">{item.definition}</p>
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

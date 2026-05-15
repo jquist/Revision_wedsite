@@ -3,51 +3,62 @@ import React, { useState } from "react";
 function AddFlashcardForm({ onAddFlashcard }) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+  const [difficulty, setDifficulty] = useState("medium");
 
   function handleSubmit(event) {
     event.preventDefault();
-
-    if (!question.trim() || !answer.trim()) {
-      return;
-    }
+    if (!question.trim() || !answer.trim()) return;
 
     onAddFlashcard({
       question: question.trim(),
       answer: answer.trim(),
+      difficulty,
+      tags: [],
     });
-
     setQuestion("");
     setAnswer("");
+    setDifficulty("medium");
   }
 
   return (
-    <form className="card shadow-sm mb-3" onSubmit={handleSubmit}>
+    <form className="card revision-card shadow-sm mb-3" onSubmit={handleSubmit}>
       <div className="card-body">
-        <h3 className="h4">Add Flashcard</h3>
-
+        <h3 className="h5">Add flashcard</h3>
         <div className="mb-3">
-          <label className="form-label">Question</label>
-          <input
+          <label className="form-label" htmlFor="new-card-question">Question / front</label>
+          <textarea
+            id="new-card-question"
             className="form-control"
+            rows="2"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Example: What does DNS stand for?"
           />
         </div>
-
         <div className="mb-3">
-          <label className="form-label">Answer</label>
+          <label className="form-label" htmlFor="new-card-answer">Answer / back</label>
           <textarea
+            id="new-card-answer"
             className="form-control"
-            rows="3"
+            rows="2"
             value={answer}
             onChange={(event) => setAnswer(event.target.value)}
-            placeholder="Example: Domain Name System."
           />
         </div>
-
-        <button className="btn btn-primary" type="submit">
-          Add Flashcard
+        <div className="mb-3">
+          <label className="form-label" htmlFor="new-card-difficulty">Difficulty</label>
+          <select
+            id="new-card-difficulty"
+            className="form-select"
+            value={difficulty}
+            onChange={(event) => setDifficulty(event.target.value)}
+          >
+            <option value="easy">easy</option>
+            <option value="medium">medium</option>
+            <option value="hard">hard</option>
+          </select>
+        </div>
+        <button className="btn btn-success" type="submit">
+          Save Card
         </button>
       </div>
     </form>

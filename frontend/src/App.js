@@ -22,9 +22,7 @@ function App() {
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [error, setError] = useState("");
 
-  const selectedSubject = subjects.find(
-    (subject) => subject.subjectId === selectedSubjectId
-  );
+  const selectedSubject = subjects.find((subject) => subject.subjectId === selectedSubjectId);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,30 +30,19 @@ function App() {
     async function checkSession() {
       try {
         const savedUser = await getCurrentUser();
-
-        if (isMounted) {
-          setCurrentUser(savedUser);
-        }
+        if (isMounted) setCurrentUser(savedUser);
       } catch (sessionError) {
-        if (isMounted) {
-          setError(sessionError.message);
-        }
+        if (isMounted) setError(sessionError.message);
       } finally {
-        if (isMounted) {
-          setIsCheckingAuth(false);
-        }
+        if (isMounted) setIsCheckingAuth(false);
       }
     }
 
     checkSession();
-
     const unsubscribe = onAuthStateChange((user) => {
       setCurrentUser(user);
       setSelectedSubjectId(null);
-
-      if (!user) {
-        setSubjects([]);
-      }
+      if (!user) setSubjects([]);
     });
 
     return () => {
@@ -65,9 +52,7 @@ function App() {
   }, []);
 
   async function loadSubjects() {
-    if (!currentUser) {
-      return;
-    }
+    if (!currentUser) return;
 
     setIsLoadingSubjects(true);
     setError("");
@@ -142,13 +127,8 @@ function App() {
   async function handleDeleteSubject(subjectId) {
     const previousSubjects = subjects;
 
-    setSubjects((currentSubjects) =>
-      currentSubjects.filter((subject) => subject.subjectId !== subjectId)
-    );
-
-    if (selectedSubjectId === subjectId) {
-      setSelectedSubjectId(null);
-    }
+    setSubjects((currentSubjects) => currentSubjects.filter((subject) => subject.subjectId !== subjectId));
+    if (selectedSubjectId === subjectId) setSelectedSubjectId(null);
 
     try {
       const savedSubjects = await deleteSubject(subjectId);
@@ -170,11 +150,7 @@ function App() {
   }
 
   if (isCheckingAuth) {
-    return (
-      <div className="container py-4">
-        <div className="alert alert-info">Checking your login...</div>
-      </div>
-    );
+    return <main className="container py-5">Checking your login...</main>;
   }
 
   if (!currentUser) {
@@ -182,38 +158,41 @@ function App() {
   }
 
   if (isLoadingSubjects) {
-    return (
-      <div className="container py-4">
-        <div className="alert alert-info">Loading your revision data...</div>
-      </div>
-    );
+    return <main className="container py-5">Loading your revision data...</main>;
   }
 
   return (
     <>
-      {error && (
-        <div className="container pt-3">
-          <div className="alert alert-danger">{error}</div>
+      <header className="app-header border-bottom">
+        <div className="container d-flex justify-content-between align-items-center py-3">
+          <div>
+            <h1 className="h3 mb-0">Revision App</h1>
+            <p className="text-muted mb-0">Flashcards, tests, notes, and glossary.</p>
+          </div>
+          <button className="btn btn-outline-secondary" onClick={handleLogout}>
+            Log out
+          </button>
         </div>
-      )}
+      </header>
 
-      {selectedSubject ? (
-        <SubjectPage
-          subject={selectedSubject}
-          onBack={() => setSelectedSubjectId(null)}
-          onUpdateSubject={updateSubject}
-        />
-      ) : (
-        <Dashboard
-          subjects={subjects}
-          currentUser={currentUser}
-          onLogout={handleLogout}
-          onSelectSubject={(subject) => setSelectedSubjectId(subject.subjectId)}
-          onAddSubject={addSubject}
-          onDeleteSubject={handleDeleteSubject}
-          onClearAllSubjects={clearAllSubjects}
-        />
-      )}
+      <main>
+        {error && <div className="container pt-3"><div className="alert alert-danger">{error}</div></div>}
+        {selectedSubject ? (
+          <SubjectPage
+            subject={selectedSubject}
+            onBack={() => setSelectedSubjectId(null)}
+            onUpdateSubject={updateSubject}
+          />
+        ) : (
+          <Dashboard
+            subjects={subjects}
+            onSelectSubject={(subject) => setSelectedSubjectId(subject.subjectId)}
+            onAddSubject={addSubject}
+            onDeleteSubject={handleDeleteSubject}
+            onClearAllSubjects={clearAllSubjects}
+          />
+        )}
+      </main>
     </>
   );
 }
