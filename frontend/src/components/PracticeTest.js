@@ -90,19 +90,23 @@ function normaliseQuestion(question, index) {
 }
 
 function PracticeTest({ topic }) {
-  const questions = topic.quizQuestions || topic.quiz_questions || [];
+  const topicKey = topic?.topicId || topic?.id || topic?.topicName || "current-topic";
+  const questions = useMemo(
+    () => topic?.quizQuestions || topic?.quiz_questions || [],
+    [topic?.quizQuestions, topic?.quiz_questions]
+  );
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   const preparedQuestions = useMemo(
     () => questions.map(normaliseQuestion),
-    [topic.topicId, questions]
+    [questions]
   );
 
   useEffect(() => {
     setAnswers({});
     setSubmitted(false);
-  }, [topic.topicId, questions]);
+  }, [topicKey, questions]);
 
   if (questions.length === 0) {
     return <p>No practice questions yet.</p>;
