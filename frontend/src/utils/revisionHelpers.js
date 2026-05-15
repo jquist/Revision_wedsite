@@ -36,6 +36,42 @@ export function createBlankSubject({ subjectName, description }) {
   };
 }
 
+export function createBlankTopic({ topicName, summary = "", existingTopics = [] }) {
+  const cleanName = String(topicName || "").trim();
+  const idBase = makeSlug(cleanName) || `topic-${Date.now()}`;
+  const existingIds = new Set((existingTopics || []).map((topic) => topic.topicId));
+
+  let topicId = idBase;
+  let counter = 2;
+
+  while (existingIds.has(topicId)) {
+    topicId = `${idBase}-${counter}`;
+    counter += 1;
+  }
+
+  return {
+    topicId,
+    topicName: cleanName || "New Topic",
+    sourceFiles: [],
+    summary: summary || "New revision topic. Add flashcards, notes, tests, and glossary terms here.",
+    notes: [],
+    flashcards: [],
+    quizQuestions: [],
+    glossary: [],
+  };
+}
+
+export function addTopic(subject, newTopic) {
+  return {
+    ...subject,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    topics: [
+      ...(subject.topics || []),
+      newTopic,
+    ],
+  };
+}
+
 export function getSubjectStats(subject) {
   const topics = subject.topics || [];
 
