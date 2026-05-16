@@ -15,30 +15,74 @@ import {
 } from "./utils/api";
 
 const LAST_SUBJECT_KEY_PREFIX = "revision-app:last-subject-id";
+const LAST_SUBJECT_GLOBAL_KEY = `${LAST_SUBJECT_KEY_PREFIX}:last-opened`;
 
 function getLastSubjectKey(userId) {
-  return userId ? `${LAST_SUBJECT_KEY_PREFIX}:${userId}` : LAST_SUBJECT_KEY_PREFIX;
+  return userId ? `${LAST_SUBJECT_KEY_PREFIX}:${userId}` : LAST_SUBJECT_GLOBAL_KEY;
+}
+
+function getHashParams() {
+  try {
+    return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  } catch (urlError) {
+    return new URLSearchParams();
+  }
+}
+
+function getSubjectIdFromUrl() {
+  return getHashParams().get("subject") || "";
+}
+
+function writeSubjectIdToUrl(subjectId) {
+  try {
+    const params = getHashParams();
+
+    if (subjectId) {
+      params.set("subject", subjectId);
+    } else {
+      params.delete("subject");
+      params.delete("topic");
+      params.delete("tab");
+    }
+
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${window.location.search}${query ? `#${query}` : ""}`;
+    window.history.replaceState(null, "", nextUrl);
+  } catch (urlError) {
+    // URL state is only a backup. The app should still work without it.
+  }
 }
 
 function getStoredSubjectId(userId) {
   try {
-    return localStorage.getItem(getLastSubjectKey(userId)) || "";
+    const urlSubjectId = getSubjectIdFromUrl();
+    if (urlSubjectId) return urlSubjectId;
+
+    const userSubjectId = userId ? localStorage.getItem(getLastSubjectKey(userId)) : "";
+    if (userSubjectId) return userSubjectId;
+
+    return localStorage.getItem(LAST_SUBJECT_GLOBAL_KEY) || "";
   } catch (storageError) {
-    return "";
+    return getSubjectIdFromUrl();
   }
 }
 
 function storeSubjectId(userId, subjectId) {
   try {
-    const key = getLastSubjectKey(userId);
+    const userKey = getLastSubjectKey(userId);
+
     if (subjectId) {
-      localStorage.setItem(key, subjectId);
+      localStorage.setItem(userKey, subjectId);
+      localStorage.setItem(LAST_SUBJECT_GLOBAL_KEY, subjectId);
     } else {
-      localStorage.removeItem(key);
+      localStorage.removeItem(userKey);
+      localStorage.removeItem(LAST_SUBJECT_GLOBAL_KEY);
     }
   } catch (storageError) {
-    // Local storage can be blocked in some browsers. The app should still work without it.
+    // Local storage can be blocked in some browsers. The app should still work using the URL backup.
   }
+
+  writeSubjectIdToUrl(subjectId);
 }
 
 function clearStoredSubjectIds() {
@@ -49,6 +93,8 @@ function clearStoredSubjectIds() {
   } catch (storageError) {
     // Local storage can be blocked in some browsers. The app should still work without it.
   }
+
+  writeSubjectIdToUrl("");
 }
 
 function hasSubject(subjects, subjectId) {
@@ -58,9 +104,10 @@ function hasSubject(subjects, subjectId) {
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [subjects, setSubjects] = useState([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState(null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState(() => getStoredSubjectId() || null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
+  const [hasLoadedSubjects, setHasLoadedSubjects] = useState(false);
   const [error, setError] = useState("");
 
   const selectedSubject = subjects.find((subject) => subject.subjectId === selectedSubjectId);
@@ -71,7 +118,10 @@ function App() {
     async function checkSession() {
       try {
         const savedUser = await getCurrentUser();
-        if (isMounted) setCurrentUser(savedUser);
+        if (isMounted) {
+          setCurrentUser(savedUser);
+          setSelectedSubjectId(getStoredSubjectId(savedUser?.id) || null);
+        }
       } catch (sessionError) {
         if (isMounted) setError(sessionError.message);
       } finally {
@@ -89,6 +139,11 @@ function App() {
           return previousUser;
         }
 
+        if (nextUserId) {
+          setHasLoadedSubjects(false);
+          setSelectedSubjectId(getStoredSubjectId(nextUserId) || null);
+        }
+
         return user;
       });
 
@@ -96,6 +151,7 @@ function App() {
         clearStoredSubjectIds();
         setSelectedSubjectId(null);
         setSubjects([]);
+        setHasLoadedSubjects(false);
       }
     });
 
@@ -122,26 +178,33 @@ function App() {
 
         const storedSubjectId = getStoredSubjectId(currentUser.id);
         if (hasSubject(loadedSubjects, storedSubjectId)) {
+          storeSubjectId(currentUser.id, storedSubjectId);
           return storedSubjectId;
         }
 
+        storeSubjectId(currentUser.id, "");
         return null;
       });
     } catch (loadError) {
       setError(loadError.message);
     } finally {
       setIsLoadingSubjects(false);
+      setHasLoadedSubjects(true);
     }
   }
 
   useEffect(() => {
+    if (!currentUser) return;
+
+    setHasLoadedSubjects(false);
     loadSubjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   function handleLogin(user) {
     setCurrentUser(user);
-    setSelectedSubjectId(null);
+    setHasLoadedSubjects(false);
+    setSelectedSubjectId(getStoredSubjectId(user?.id) || null);
   }
 
   async function handleLogout() {
@@ -154,6 +217,7 @@ function App() {
       setCurrentUser(null);
       setSubjects([]);
       setSelectedSubjectId(null);
+      setHasLoadedSubjects(false);
     }
   }
 
@@ -241,7 +305,7 @@ function App() {
     return <AuthPage onLogin={handleLogin} />;
   }
 
-  if (isLoadingSubjects) {
+  if (isLoadingSubjects || !hasLoadedSubjects) {
     return <main className="container py-5">Loading your revision data...</main>;
   }
 

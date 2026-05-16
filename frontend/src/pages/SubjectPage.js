@@ -21,12 +21,57 @@ function getSubjectPageKey(subjectId) {
   return `${SUBJECT_PAGE_STATE_PREFIX}:${subjectId}`;
 }
 
+function getHashParams() {
+  try {
+    return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  } catch (urlError) {
+    return new URLSearchParams();
+  }
+}
+
+function readSubjectPageStateFromUrl(subjectId) {
+  const params = getHashParams();
+
+  if (params.get("subject") !== subjectId) {
+    return {};
+  }
+
+  return {
+    selectedTopicId: params.get("topic") || undefined,
+    activeTab: params.get("tab") || undefined,
+  };
+}
+
+function writeSubjectPageStateToUrl(subjectId, nextState) {
+  try {
+    const params = getHashParams();
+    params.set("subject", subjectId);
+
+    if (nextState.selectedTopicId) {
+      params.set("topic", nextState.selectedTopicId);
+    }
+
+    if (nextState.activeTab) {
+      params.set("tab", nextState.activeTab);
+    }
+
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${window.location.search}${query ? `#${query}` : ""}`;
+    window.history.replaceState(null, "", nextUrl);
+  } catch (urlError) {
+    // URL state is only a backup. The app should still work without it.
+  }
+}
+
 function readSubjectPageState(subjectId) {
   try {
     const savedState = localStorage.getItem(getSubjectPageKey(subjectId));
-    return savedState ? JSON.parse(savedState) : {};
+    return {
+      ...(savedState ? JSON.parse(savedState) : {}),
+      ...readSubjectPageStateFromUrl(subjectId),
+    };
   } catch (storageError) {
-    return {};
+    return readSubjectPageStateFromUrl(subjectId);
   }
 }
 
@@ -35,8 +80,10 @@ function writeSubjectPageState(subjectId, nextState) {
     const currentState = readSubjectPageState(subjectId);
     localStorage.setItem(getSubjectPageKey(subjectId), JSON.stringify({ ...currentState, ...nextState }));
   } catch (storageError) {
-    // Local storage can be blocked in some browsers. The app should still work without it.
+    // Local storage can be blocked in some browsers. The app should still work using the URL backup.
   }
+
+  writeSubjectPageStateToUrl(subjectId, nextState);
 }
 
 function getSafeTopicId(subject, topicId) {
@@ -66,9 +113,14 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
 
   useEffect(() => {
     const savedState = readSubjectPageState(subject.subjectId);
-    setSelectedTopicId(getSafeTopicId(subject, savedState.selectedTopicId || ALL_TOPICS_ID));
-    setActiveTab(getSafeTab(savedState.activeTab || "flashcards"));
-  }, [subject]);
+    const nextTopicId = getSafeTopicId(subject, savedState.selectedTopicId || selectedTopicId || ALL_TOPICS_ID);
+    const nextTab = getSafeTab(savedState.activeTab || activeTab || "flashcards");
+
+    setSelectedTopicId(nextTopicId);
+    setActiveTab(nextTab);
+    writeSubjectPageState(subject.subjectId, { selectedTopicId: nextTopicId, activeTab: nextTab });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subject.subjectId, subject.topics]);
 
   function handleSelectTopic(topicId) {
     const safeTopicId = getSafeTopicId(subject, topicId);
