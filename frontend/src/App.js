@@ -49,7 +49,7 @@ function writeSubjectIdToUrl(subjectId) {
     const nextUrl = `${window.location.pathname}${window.location.search}${query ? `#${query}` : ""}`;
     window.history.replaceState(null, "", nextUrl);
   } catch (urlError) {
-    // URL state is only a backup. The app should still work without it.
+    // URL state is only a backup. The app still works without it.
   }
 }
 
@@ -79,7 +79,7 @@ function storeSubjectId(userId, subjectId) {
       localStorage.removeItem(LAST_SUBJECT_GLOBAL_KEY);
     }
   } catch (storageError) {
-    // Local storage can be blocked in some browsers. The app should still work using the URL backup.
+    // Local storage can be blocked. The URL hash is still used as a backup.
   }
 
   writeSubjectIdToUrl(subjectId);
@@ -91,7 +91,7 @@ function clearStoredSubjectIds() {
       .filter((key) => key === LAST_SUBJECT_KEY_PREFIX || key.startsWith(`${LAST_SUBJECT_KEY_PREFIX}:`))
       .forEach((key) => localStorage.removeItem(key));
   } catch (storageError) {
-    // Local storage can be blocked in some browsers. The app should still work without it.
+    // Local storage can be blocked. The app still works without it.
   }
 
   writeSubjectIdToUrl("");
@@ -110,6 +110,7 @@ function App() {
   const [hasLoadedSubjects, setHasLoadedSubjects] = useState(false);
   const [error, setError] = useState("");
 
+  const currentUserId = currentUser?.id || null;
   const selectedSubject = subjects.find((subject) => subject.subjectId === selectedSubjectId);
 
   useEffect(() => {
@@ -130,29 +131,36 @@ function App() {
     }
 
     checkSession();
+
     const unsubscribe = onAuthStateChange((user, event) => {
+      // Important: Supabase may briefly emit an auth event with no user when a tab
+      // sleeps/wakes or refocuses. That is not the same as the user pressing Log out.
+      // Do not clear the selected subject unless the event is a real SIGNED_OUT event.
+      if (event === "SIGNED_OUT") {
+        clearStoredSubjectIds();
+        setCurrentUser(null);
+        setSubjects([]);
+        setSelectedSubjectId(null);
+        setHasLoadedSubjects(false);
+        return;
+      }
+
+      if (!user) {
+        return;
+      }
+
       setCurrentUser((previousUser) => {
         const previousUserId = previousUser?.id || null;
-        const nextUserId = user?.id || null;
+        const nextUserId = user.id || null;
 
         if (previousUserId === nextUserId) {
           return previousUser;
         }
 
-        if (nextUserId) {
-          setHasLoadedSubjects(false);
-          setSelectedSubjectId(getStoredSubjectId(nextUserId) || null);
-        }
-
+        setHasLoadedSubjects(false);
+        setSelectedSubjectId(getStoredSubjectId(nextUserId) || null);
         return user;
       });
-
-      if (event === "SIGNED_OUT" || !user) {
-        clearStoredSubjectIds();
-        setSelectedSubjectId(null);
-        setSubjects([]);
-        setHasLoadedSubjects(false);
-      }
     });
 
     return () => {
@@ -162,7 +170,7 @@ function App() {
   }, []);
 
   async function loadSubjects() {
-    if (!currentUser) return;
+    if (!currentUserId) return;
 
     setIsLoadingSubjects(true);
     setError("");
@@ -172,17 +180,17 @@ function App() {
       setSubjects(loadedSubjects);
       setSelectedSubjectId((currentSelectedId) => {
         if (hasSubject(loadedSubjects, currentSelectedId)) {
-          storeSubjectId(currentUser.id, currentSelectedId);
+          storeSubjectId(currentUserId, currentSelectedId);
           return currentSelectedId;
         }
 
-        const storedSubjectId = getStoredSubjectId(currentUser.id);
+        const storedSubjectId = getStoredSubjectId(currentUserId);
         if (hasSubject(loadedSubjects, storedSubjectId)) {
-          storeSubjectId(currentUser.id, storedSubjectId);
+          storeSubjectId(currentUserId, storedSubjectId);
           return storedSubjectId;
         }
 
-        storeSubjectId(currentUser.id, "");
+        storeSubjectId(currentUserId, "");
         return null;
       });
     } catch (loadError) {
@@ -194,12 +202,37 @@ function App() {
   }
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUserId) return;
 
     setHasLoadedSubjects(false);
     loadSubjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUserId]);
+
+  useEffect(() => {
+    function restoreOpenSubjectAfterTabFocus() {
+      if (!currentUserId) return;
+
+      const storedSubjectId = getStoredSubjectId(currentUserId);
+      if (hasSubject(subjects, storedSubjectId)) {
+        setSelectedSubjectId(storedSubjectId);
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        restoreOpenSubjectAfterTabFocus();
+      }
+    }
+
+    window.addEventListener("focus", restoreOpenSubjectAfterTabFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", restoreOpenSubjectAfterTabFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [currentUserId, subjects]);
 
   function handleLogin(user) {
     setCurrentUser(user);
@@ -213,7 +246,7 @@ function App() {
     } catch (logoutError) {
       setError(logoutError.message);
     } finally {
-      storeSubjectId(currentUser?.id, "");
+      clearStoredSubjectIds();
       setCurrentUser(null);
       setSubjects([]);
       setSelectedSubjectId(null);
@@ -245,7 +278,7 @@ function App() {
 
     setSubjects((currentSubjects) => [...currentSubjects, newSubject]);
     setSelectedSubjectId(newSubject.subjectId);
-    storeSubjectId(currentUser?.id, newSubject.subjectId);
+    storeSubjectId(currentUserId, newSubject.subjectId);
 
     try {
       const savedSubjects = await createSubject(newSubject);
@@ -253,7 +286,7 @@ function App() {
     } catch (saveError) {
       setError(saveError.message);
       setSubjects(previousSubjects);
-      storeSubjectId(currentUser?.id, "");
+      storeSubjectId(currentUserId, "");
       setSelectedSubjectId(null);
     }
   }
@@ -263,7 +296,7 @@ function App() {
 
     setSubjects((currentSubjects) => currentSubjects.filter((subject) => subject.subjectId !== subjectId));
     if (selectedSubjectId === subjectId) {
-      storeSubjectId(currentUser?.id, "");
+      storeSubjectId(currentUserId, "");
       setSelectedSubjectId(null);
     }
 
@@ -280,7 +313,7 @@ function App() {
     try {
       const savedSubjects = await saveAllSubjects([]);
       setSubjects(savedSubjects);
-      storeSubjectId(currentUser?.id, "");
+      storeSubjectId(currentUserId, "");
       setSelectedSubjectId(null);
     } catch (saveError) {
       setError(saveError.message);
@@ -289,11 +322,11 @@ function App() {
 
   function handleSelectSubject(subject) {
     setSelectedSubjectId(subject.subjectId);
-    storeSubjectId(currentUser?.id, subject.subjectId);
+    storeSubjectId(currentUserId, subject.subjectId);
   }
 
   function handleBackToDashboard() {
-    storeSubjectId(currentUser?.id, "");
+    storeSubjectId(currentUserId, "");
     setSelectedSubjectId(null);
   }
 

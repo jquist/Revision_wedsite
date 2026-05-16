@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import AddFlashcardForm from "./AddFlashcardForm";
-import { normaliseFlashcard } from "../utils/revisionHelpers";
+import { getNextFlashcardScore, normaliseFlashcard } from "../utils/revisionHelpers";
 
 const SCORE_FILTERS = [3, 2, 1, 0, -1, -2, -3];
 
@@ -21,6 +21,19 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
   }, [allFlashcards, selectedScores]);
 
   const flashcards = filteredFlashcards;
+
+  useEffect(() => {
+    if (flashcards.length === 0) {
+      setCurrentIndex(0);
+      setShowAnswer(false);
+      return;
+    }
+
+    if (currentIndex >= flashcards.length) {
+      setCurrentIndex(flashcards.length - 1);
+      setShowAnswer(false);
+    }
+  }, [currentIndex, flashcards.length]);
 
   function resetCardPosition() {
     setCurrentIndex(0);
@@ -55,16 +68,32 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
     setCurrentIndex((previous) => (previous >= flashcards.length - 1 ? 0 : previous + 1));
   }
 
+  function stayOnCurrentSlotAfterFilteredCardLeaves() {
+    setShowAnswer(false);
+    setCurrentIndex((previous) => Math.max(0, previous));
+  }
+
   function markCard(wasCorrect) {
     const currentCard = flashcards[currentIndex];
     if (!currentCard) return;
+
+    const nextScore = getNextFlashcardScore(currentCard.score ?? 0, wasCorrect);
+    const cardWillStillBeVisible = selectedScores.length === 0 || selectedScores.includes(nextScore);
 
     onMarkFlashcard(
       currentCard.originalTopicId || selectedTopicId,
       currentCard.originalFlashcardId || currentCard.flashcardId,
       wasCorrect
     );
-    goNext();
+
+    // If a score filter is active and the card's new score leaves the filter,
+    // the list length decreases. In that case do NOT also increase the index,
+    // or the next card gets skipped and the counter can go out of range.
+    if (cardWillStillBeVisible) {
+      goNext();
+    } else {
+      stayOnCurrentSlotAfterFilteredCardLeaves();
+    }
   }
 
   function handleAddFlashcard(newCard) {
@@ -111,20 +140,14 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
           >
             All Cards
           </button>
-          <button className="btn btn-outline-secondary" onClick={refreshCards}>
-            Refresh Card Stats
+          <button className="btn btn-outline-secondary" onClick={refreshCards} disabled={flashcards.length === 0}>
+            Refresh Cards
           </button>
         </div>
-        <p className="small text-muted mt-2 mb-0">
-          Showing {flashcards.length} of {allFlashcards.length} card(s).
-          {selectedScores.length > 0
-            ? ` Active filters: ${selectedScores.map((score) => (score > 0 ? `+${score}` : score)).join(", ")}`
-            : " Active filters: all cards"}
-        </p>
       </div>
 
       {flashcards.length === 0 ? (
-        <div className="alert alert-warning">No cards match this filter yet.</div>
+        <p>No flashcards match this filter yet.</p>
       ) : (
         <>
           <div className="card shadow-sm mb-3 revision-card">

@@ -90,10 +90,9 @@ function normaliseQuestion(question, index) {
 }
 
 function PracticeTest({ topic }) {
-  const topicKey = topic?.topicId || topic?.id || topic?.topicName || "current-topic";
   const questions = useMemo(
-    () => topic?.quizQuestions || topic?.quiz_questions || [],
-    [topic?.quizQuestions, topic?.quiz_questions]
+    () => topic.quizQuestions || topic.quiz_questions || [],
+    [topic.quizQuestions, topic.quiz_questions]
   );
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -106,7 +105,7 @@ function PracticeTest({ topic }) {
   useEffect(() => {
     setAnswers({});
     setSubmitted(false);
-  }, [topicKey, questions]);
+  }, [topic.topicId, questions]);
 
   if (questions.length === 0) {
     return <p>No practice questions yet.</p>;

@@ -59,7 +59,7 @@ function writeSubjectPageStateToUrl(subjectId, nextState) {
     const nextUrl = `${window.location.pathname}${window.location.search}${query ? `#${query}` : ""}`;
     window.history.replaceState(null, "", nextUrl);
   } catch (urlError) {
-    // URL state is only a backup. The app should still work without it.
+    // URL state is only a backup. The app still works without it.
   }
 }
 
@@ -80,7 +80,7 @@ function writeSubjectPageState(subjectId, nextState) {
     const currentState = readSubjectPageState(subjectId);
     localStorage.setItem(getSubjectPageKey(subjectId), JSON.stringify({ ...currentState, ...nextState }));
   } catch (storageError) {
-    // Local storage can be blocked in some browsers. The app should still work using the URL backup.
+    // Local storage can be blocked. The URL hash is still used as a backup.
   }
 
   writeSubjectPageStateToUrl(subjectId, nextState);
