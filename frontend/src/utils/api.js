@@ -29,8 +29,8 @@ export async function getCurrentUser() {
 }
 
 export function onAuthStateChange(callback) {
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user || null);
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    callback(session?.user || null, event);
   });
   return () => data.subscription.unsubscribe();
 }

@@ -39,10 +39,22 @@ function App() {
     }
 
     checkSession();
-    const unsubscribe = onAuthStateChange((user) => {
-      setCurrentUser(user);
-      setSelectedSubjectId(null);
-      if (!user) setSubjects([]);
+    const unsubscribe = onAuthStateChange((user, event) => {
+      setCurrentUser((previousUser) => {
+        const previousUserId = previousUser?.id || null;
+        const nextUserId = user?.id || null;
+
+        if (previousUserId === nextUserId) {
+          return previousUser;
+        }
+
+        return user;
+      });
+
+      if (event === "SIGNED_OUT" || !user) {
+        setSelectedSubjectId(null);
+        setSubjects([]);
+      }
     });
 
     return () => {

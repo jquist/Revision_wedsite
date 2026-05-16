@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import AddFlashcardForm from "./AddFlashcardForm";
-import { getNextFlashcardScore, normaliseFlashcard } from "../utils/revisionHelpers";
+import { normaliseFlashcard } from "../utils/revisionHelpers";
 
 const SCORE_FILTERS = [3, 2, 1, 0, -1, -2, -3];
 
@@ -21,13 +21,6 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
   }, [allFlashcards, selectedScores]);
 
   const flashcards = filteredFlashcards;
-
-  useEffect(() => {
-    setCurrentIndex((previous) => {
-      if (flashcards.length === 0) return 0;
-      return previous >= flashcards.length ? flashcards.length - 1 : previous;
-    });
-  }, [flashcards.length]);
 
   function resetCardPosition() {
     setCurrentIndex(0);
@@ -62,37 +55,16 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
     setCurrentIndex((previous) => (previous >= flashcards.length - 1 ? 0 : previous + 1));
   }
 
-  function moveAfterMark(cardWillStayVisible) {
-    setShowAnswer(false);
-
-    setCurrentIndex((previous) => {
-      const visibleCountAfterMark = cardWillStayVisible ? flashcards.length : flashcards.length - 1;
-
-      if (visibleCountAfterMark <= 0) return 0;
-
-      if (cardWillStayVisible) {
-        return previous >= visibleCountAfterMark - 1 ? 0 : previous + 1;
-      }
-
-      // If the marked card leaves the active score filter, the next card shifts into
-      // this same index. Do not also increment, or one card gets skipped.
-      return previous >= visibleCountAfterMark ? 0 : previous;
-    });
-  }
-
   function markCard(wasCorrect) {
-    const currentCard = flashcards[safeCurrentIndex];
+    const currentCard = flashcards[currentIndex];
     if (!currentCard) return;
-
-    const nextScore = getNextFlashcardScore(currentCard.score ?? 0, wasCorrect);
-    const cardWillStayVisible = selectedScores.length === 0 || selectedScores.includes(nextScore);
 
     onMarkFlashcard(
       currentCard.originalTopicId || selectedTopicId,
       currentCard.originalFlashcardId || currentCard.flashcardId,
       wasCorrect
     );
-    moveAfterMark(cardWillStayVisible);
+    goNext();
   }
 
   function handleAddFlashcard(newCard) {
@@ -101,8 +73,7 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
     showAllCards();
   }
 
-  const safeCurrentIndex = flashcards.length === 0 ? 0 : Math.min(currentIndex, flashcards.length - 1);
-  const currentCard = flashcards[safeCurrentIndex];
+  const currentCard = flashcards[currentIndex];
 
   return (
     <div>
@@ -159,7 +130,7 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
           <div className="card shadow-sm mb-3 revision-card">
             <div className="card-body">
               <p className="text-muted">
-                Card {safeCurrentIndex + 1} of {flashcards.length}
+                Card {currentIndex + 1} of {flashcards.length}
                 {currentCard.topicName ? ` • ${currentCard.topicName}` : ""}
               </p>
               <h4>{currentCard.question}</h4>
