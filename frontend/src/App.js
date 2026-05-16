@@ -14,6 +14,47 @@ import {
   saveSubject,
 } from "./utils/api";
 
+const LAST_SUBJECT_KEY_PREFIX = "revision-app:last-subject-id";
+
+function getLastSubjectKey(userId) {
+  return userId ? `${LAST_SUBJECT_KEY_PREFIX}:${userId}` : LAST_SUBJECT_KEY_PREFIX;
+}
+
+function getStoredSubjectId(userId) {
+  try {
+    return localStorage.getItem(getLastSubjectKey(userId)) || "";
+  } catch (storageError) {
+    return "";
+  }
+}
+
+function storeSubjectId(userId, subjectId) {
+  try {
+    const key = getLastSubjectKey(userId);
+    if (subjectId) {
+      localStorage.setItem(key, subjectId);
+    } else {
+      localStorage.removeItem(key);
+    }
+  } catch (storageError) {
+    // Local storage can be blocked in some browsers. The app should still work without it.
+  }
+}
+
+function clearStoredSubjectIds() {
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key === LAST_SUBJECT_KEY_PREFIX || key.startsWith(`${LAST_SUBJECT_KEY_PREFIX}:`))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch (storageError) {
+    // Local storage can be blocked in some browsers. The app should still work without it.
+  }
+}
+
+function hasSubject(subjects, subjectId) {
+  return Boolean(subjectId && subjects.some((subject) => subject.subjectId === subjectId));
+}
+
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [subjects, setSubjects] = useState([]);
@@ -52,6 +93,7 @@ function App() {
       });
 
       if (event === "SIGNED_OUT" || !user) {
+        clearStoredSubjectIds();
         setSelectedSubjectId(null);
         setSubjects([]);
       }
@@ -72,6 +114,19 @@ function App() {
     try {
       const loadedSubjects = await fetchSubjects();
       setSubjects(loadedSubjects);
+      setSelectedSubjectId((currentSelectedId) => {
+        if (hasSubject(loadedSubjects, currentSelectedId)) {
+          storeSubjectId(currentUser.id, currentSelectedId);
+          return currentSelectedId;
+        }
+
+        const storedSubjectId = getStoredSubjectId(currentUser.id);
+        if (hasSubject(loadedSubjects, storedSubjectId)) {
+          return storedSubjectId;
+        }
+
+        return null;
+      });
     } catch (loadError) {
       setError(loadError.message);
     } finally {
@@ -95,6 +150,7 @@ function App() {
     } catch (logoutError) {
       setError(logoutError.message);
     } finally {
+      storeSubjectId(currentUser?.id, "");
       setCurrentUser(null);
       setSubjects([]);
       setSelectedSubjectId(null);
@@ -125,6 +181,7 @@ function App() {
 
     setSubjects((currentSubjects) => [...currentSubjects, newSubject]);
     setSelectedSubjectId(newSubject.subjectId);
+    storeSubjectId(currentUser?.id, newSubject.subjectId);
 
     try {
       const savedSubjects = await createSubject(newSubject);
@@ -132,6 +189,7 @@ function App() {
     } catch (saveError) {
       setError(saveError.message);
       setSubjects(previousSubjects);
+      storeSubjectId(currentUser?.id, "");
       setSelectedSubjectId(null);
     }
   }
@@ -140,7 +198,10 @@ function App() {
     const previousSubjects = subjects;
 
     setSubjects((currentSubjects) => currentSubjects.filter((subject) => subject.subjectId !== subjectId));
-    if (selectedSubjectId === subjectId) setSelectedSubjectId(null);
+    if (selectedSubjectId === subjectId) {
+      storeSubjectId(currentUser?.id, "");
+      setSelectedSubjectId(null);
+    }
 
     try {
       const savedSubjects = await deleteSubject(subjectId);
@@ -155,10 +216,21 @@ function App() {
     try {
       const savedSubjects = await saveAllSubjects([]);
       setSubjects(savedSubjects);
+      storeSubjectId(currentUser?.id, "");
       setSelectedSubjectId(null);
     } catch (saveError) {
       setError(saveError.message);
     }
+  }
+
+  function handleSelectSubject(subject) {
+    setSelectedSubjectId(subject.subjectId);
+    storeSubjectId(currentUser?.id, subject.subjectId);
+  }
+
+  function handleBackToDashboard() {
+    storeSubjectId(currentUser?.id, "");
+    setSelectedSubjectId(null);
   }
 
   if (isCheckingAuth) {
@@ -192,13 +264,13 @@ function App() {
         {selectedSubject ? (
           <SubjectPage
             subject={selectedSubject}
-            onBack={() => setSelectedSubjectId(null)}
+            onBack={handleBackToDashboard}
             onUpdateSubject={updateSubject}
           />
         ) : (
           <Dashboard
             subjects={subjects}
-            onSelectSubject={(subject) => setSelectedSubjectId(subject.subjectId)}
+            onSelectSubject={handleSelectSubject}
             onAddSubject={addSubject}
             onDeleteSubject={handleDeleteSubject}
             onClearAllSubjects={clearAllSubjects}

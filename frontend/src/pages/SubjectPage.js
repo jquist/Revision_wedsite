@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import TopicSelector from "../components/TopicSelector";
 import FlashcardPractice from "../components/FlashcardPractice";
 import PracticeTest from "../components/PracticeTest";
@@ -14,14 +14,73 @@ import {
   resetFlashcardStats,
 } from "../utils/revisionHelpers";
 
+const SUBJECT_PAGE_STATE_PREFIX = "revision-app:subject-page";
+const VALID_TABS = ["flashcards", "test", "notes", "glossary"];
+
+function getSubjectPageKey(subjectId) {
+  return `${SUBJECT_PAGE_STATE_PREFIX}:${subjectId}`;
+}
+
+function readSubjectPageState(subjectId) {
+  try {
+    const savedState = localStorage.getItem(getSubjectPageKey(subjectId));
+    return savedState ? JSON.parse(savedState) : {};
+  } catch (storageError) {
+    return {};
+  }
+}
+
+function writeSubjectPageState(subjectId, nextState) {
+  try {
+    const currentState = readSubjectPageState(subjectId);
+    localStorage.setItem(getSubjectPageKey(subjectId), JSON.stringify({ ...currentState, ...nextState }));
+  } catch (storageError) {
+    // Local storage can be blocked in some browsers. The app should still work without it.
+  }
+}
+
+function getSafeTopicId(subject, topicId) {
+  if (topicId === ALL_TOPICS_ID) return ALL_TOPICS_ID;
+  const topicExists = (subject.topics || []).some((topic) => topic.topicId === topicId);
+  return topicExists ? topicId : ALL_TOPICS_ID;
+}
+
+function getSafeTab(tab) {
+  return VALID_TABS.includes(tab) ? tab : "flashcards";
+}
+
 function SubjectPage({ subject, onBack, onUpdateSubject }) {
-  const [selectedTopicId, setSelectedTopicId] = useState(ALL_TOPICS_ID);
-  const [activeTab, setActiveTab] = useState("flashcards");
+  const [selectedTopicId, setSelectedTopicId] = useState(() => {
+    const savedState = readSubjectPageState(subject.subjectId);
+    return getSafeTopicId(subject, savedState.selectedTopicId || ALL_TOPICS_ID);
+  });
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedState = readSubjectPageState(subject.subjectId);
+    return getSafeTab(savedState.activeTab || "flashcards");
+  });
   const [showNewTopicForm, setShowNewTopicForm] = useState(false);
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicSummary, setNewTopicSummary] = useState("");
 
   const selectedTopic = findTopicById(subject, selectedTopicId);
+
+  useEffect(() => {
+    const savedState = readSubjectPageState(subject.subjectId);
+    setSelectedTopicId(getSafeTopicId(subject, savedState.selectedTopicId || ALL_TOPICS_ID));
+    setActiveTab(getSafeTab(savedState.activeTab || "flashcards"));
+  }, [subject]);
+
+  function handleSelectTopic(topicId) {
+    const safeTopicId = getSafeTopicId(subject, topicId);
+    setSelectedTopicId(safeTopicId);
+    writeSubjectPageState(subject.subjectId, { selectedTopicId: safeTopicId });
+  }
+
+  function handleSelectTab(tab) {
+    const safeTab = getSafeTab(tab);
+    setActiveTab(safeTab);
+    writeSubjectPageState(subject.subjectId, { activeTab: safeTab });
+  }
 
   function handleMarkFlashcard(topicId, flashcardId, wasCorrect) {
     const updatedSubject = updateFlashcardProgress(subject, topicId, flashcardId, wasCorrect);
@@ -48,6 +107,10 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
     onUpdateSubject(updatedSubject);
     setSelectedTopicId(newTopic.topicId);
     setActiveTab("flashcards");
+    writeSubjectPageState(subject.subjectId, {
+      selectedTopicId: newTopic.topicId,
+      activeTab: "flashcards",
+    });
     setNewTopicName("");
     setNewTopicSummary("");
     setShowNewTopicForm(false);
@@ -69,7 +132,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
 
       <div className="row g-2 align-items-end mb-3">
         <div className="col-md">
-          <TopicSelector subject={subject} selectedTopicId={selectedTopicId} onSelectTopic={setSelectedTopicId} />
+          <TopicSelector subject={subject} selectedTopicId={selectedTopicId} onSelectTopic={handleSelectTopic} />
         </div>
         <div className="col-md-auto mb-3">
           <button className="btn btn-success" onClick={() => setShowNewTopicForm((isOpen) => !isOpen)}>
@@ -126,25 +189,25 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
       <div className="btn-group flex-wrap mb-4">
         <button
           className={`btn ${activeTab === "flashcards" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => setActiveTab("flashcards")}
+          onClick={() => handleSelectTab("flashcards")}
         >
           Flashcards
         </button>
         <button
           className={`btn ${activeTab === "test" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => setActiveTab("test")}
+          onClick={() => handleSelectTab("test")}
         >
           Practice Test
         </button>
         <button
           className={`btn ${activeTab === "notes" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => setActiveTab("notes")}
+          onClick={() => handleSelectTab("notes")}
         >
           Notes
         </button>
         <button
           className={`btn ${activeTab === "glossary" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => setActiveTab("glossary")}
+          onClick={() => handleSelectTab("glossary")}
         >
           Glossary
         </button>
