@@ -1,7 +1,7 @@
 import React from "react";
 import { ALL_TOPICS_ID } from "../utils/revisionHelpers";
 
-function TopicSelector({ subject, selectedTopicId, onSelectTopic }) {
+function TopicSelector({ subject, selectedTopicId, onSelectTopic, showAllTopics = true }) {
   return (
     <div className="mb-3">
       <label className="form-label" htmlFor="topic-select">Topic</label>
@@ -11,7 +11,7 @@ function TopicSelector({ subject, selectedTopicId, onSelectTopic }) {
         value={selectedTopicId}
         onChange={(event) => onSelectTopic(event.target.value)}
       >
-        <option value={ALL_TOPICS_ID}>All Topics</option>
+        {showAllTopics && <option value={ALL_TOPICS_ID}>All Topics</option>}
         {(subject.topics || []).map((topic) => (
           <option key={topic.topicId} value={topic.topicId}>
             {topic.topicName}

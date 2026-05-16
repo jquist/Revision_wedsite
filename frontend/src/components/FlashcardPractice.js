@@ -4,7 +4,7 @@ import { getNextFlashcardScore, normaliseFlashcard } from "../utils/revisionHelp
 
 const SCORE_FILTERS = [3, 2, 1, 0, -1, -2, -3];
 
-function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlashcard, onRefreshCardStats }) {
+function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlashcard, onRefreshCardStats, readOnly = false, isDemo = false }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [selectedScores, setSelectedScores] = useState([]);
@@ -113,12 +113,14 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
             Select one or more scores. Correct answers add 1. Wrong answers subtract 1, except score 0 goes straight to -3.
           </p>
         </div>
-        <button className="btn btn-outline-primary" onClick={() => setShowAddForm((current) => !current)}>
-          {showAddForm ? "Close add card" : "Add new card"}
-        </button>
+        {!readOnly && (
+          <button className="btn btn-outline-primary" onClick={() => setShowAddForm((current) => !current)}>
+            {showAddForm ? "Close add card" : "Add new card"}
+          </button>
+        )}
       </div>
 
-      {showAddForm && <AddFlashcardForm onAddFlashcard={handleAddFlashcard} />}
+      {!readOnly && showAddForm && <AddFlashcardForm onAddFlashcard={handleAddFlashcard} />}
 
       <div className="filter-panel mb-3">
         <div className="d-flex flex-wrap gap-2">
@@ -140,9 +142,11 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
           >
             All Cards
           </button>
-          <button className="btn btn-outline-secondary" onClick={refreshCards} disabled={flashcards.length === 0}>
-            Refresh Cards
-          </button>
+          {!readOnly && (
+            <button className="btn btn-outline-secondary" onClick={refreshCards} disabled={flashcards.length === 0}>
+              Refresh Cards
+            </button>
+          )}
         </div>
       </div>
 
@@ -162,6 +166,7 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
 
               <div className="small text-muted mb-3">
                 Score: {currentCard.score ?? 0} | Correct: {currentCard.correctCount || 0} | Incorrect: {currentCard.incorrectCount || 0}
+                {isDemo ? " | demo progress resets when you leave" : ""}
               </div>
 
               <button className="btn btn-primary me-2" onClick={() => setShowAnswer(!showAnswer)}>

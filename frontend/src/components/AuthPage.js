@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { signInWithEmail, signUpWithEmail } from "../utils/authHelpers";
 
-function AuthPage({ onLogin }) {
+function AuthPage({ onLogin, onBackToLanding }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,8 +38,17 @@ function AuthPage({ onLogin }) {
     <main className="auth-page">
       <div className="card shadow-sm auth-card">
         <div className="card-body p-4">
-          <h1 className="h3 mb-2">Revision App</h1>
-          <p className="text-muted">Log in to save your subjects, flashcards, and tests.</p>
+          <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
+            <div>
+              <h1 className="h3 mb-0">Revision App</h1>
+              <p className="text-muted mb-0">Log in to save your subjects, flashcards, and tests.</p>
+            </div>
+            {onBackToLanding && (
+              <button className="btn btn-sm btn-outline-secondary" type="button" onClick={onBackToLanding}>
+                Home
+              </button>
+            )}
+          </div>
 
           {error && <div className="alert alert-danger">{error}</div>}
           {message && <div className="alert alert-info">{message}</div>}

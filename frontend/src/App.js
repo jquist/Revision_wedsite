@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import AuthPage from "./components/AuthPage";
 import Dashboard from "./components/Dashboard";
+import LandingPage from "./components/LandingPage";
 import SubjectPage from "./pages/SubjectPage";
+import { demoSubject as baseDemoSubject } from "./data/demoSubject";
 import { createBlankSubject } from "./utils/revisionHelpers";
 import {
   clearSession,
@@ -67,6 +69,35 @@ function getStoredSubjectId(userId) {
   }
 }
 
+
+function getVisitorModeFromUrl() {
+  const params = getHashParams();
+  if (params.get("mode") === "demo" || window.location.hash === "#demo") return "demo";
+  if (params.get("mode") === "auth") return "auth";
+  return "landing";
+}
+
+function writeVisitorModeToUrl(mode) {
+  try {
+    const params = getHashParams();
+
+    if (mode && mode !== "landing") {
+      params.set("mode", mode);
+    } else {
+      params.delete("mode");
+      params.delete("subject");
+      params.delete("topic");
+      params.delete("tab");
+    }
+
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${window.location.search}${query ? `#${query}` : ""}`;
+    window.history.replaceState(null, "", nextUrl);
+  } catch (urlError) {
+    // URL state is optional. Buttons still control the page.
+  }
+}
+
 function storeSubjectId(userId, subjectId) {
   try {
     const userKey = getLastSubjectKey(userId);
@@ -104,6 +135,8 @@ function hasSubject(subjects, subjectId) {
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [subjects, setSubjects] = useState([]);
+  const [demoSubject, setDemoSubject] = useState(() => JSON.parse(JSON.stringify(baseDemoSubject)));
+  const [visitorMode, setVisitorMode] = useState(() => getVisitorModeFromUrl());
   const [selectedSubjectId, setSelectedSubjectId] = useState(() => getStoredSubjectId() || null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
@@ -235,9 +268,30 @@ function App() {
   }, [currentUserId, subjects]);
 
   function handleLogin(user) {
+    writeVisitorModeToUrl("landing");
+    setVisitorMode("landing");
     setCurrentUser(user);
     setHasLoadedSubjects(false);
     setSelectedSubjectId(getStoredSubjectId(user?.id) || null);
+  }
+
+  function showLandingPage() {
+    writeVisitorModeToUrl("landing");
+    setVisitorMode("landing");
+  }
+
+  function showAuthPage() {
+    writeVisitorModeToUrl("auth");
+    setVisitorMode("auth");
+  }
+
+  function showDemoPage() {
+    writeVisitorModeToUrl("demo");
+    setVisitorMode("demo");
+  }
+
+  function resetDemoSubject() {
+    setDemoSubject(JSON.parse(JSON.stringify(baseDemoSubject)));
   }
 
   async function handleLogout() {
@@ -335,7 +389,51 @@ function App() {
   }
 
   if (!currentUser) {
-    return <AuthPage onLogin={handleLogin} />;
+    if (visitorMode === "demo") {
+      return (
+        <>
+          <header className="app-header border-bottom">
+            <div className="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
+              <div>
+                <h1 className="h3 mb-0">Revision App Demo</h1>
+                <p className="text-muted mb-0">Preview the app without logging in.</p>
+              </div>
+              <div className="d-flex flex-wrap gap-2">
+                <button className="btn btn-outline-secondary" onClick={showLandingPage}>
+                  Home
+                </button>
+                <button className="btn btn-outline-primary" onClick={resetDemoSubject}>
+                  Reset demo
+                </button>
+                <button className="btn btn-success" onClick={showAuthPage}>
+                  Log in / sign up
+                </button>
+              </div>
+            </div>
+          </header>
+          <main>
+            <div className="container pt-3">
+              <div className="alert alert-info mb-0">
+                Demo mode uses sample data only. Adding new subjects, topics, or cards is disabled here.
+              </div>
+            </div>
+            <SubjectPage
+              subject={demoSubject}
+              onBack={showLandingPage}
+              onUpdateSubject={setDemoSubject}
+              isDemo
+              readOnly
+            />
+          </main>
+        </>
+      );
+    }
+
+    if (visitorMode === "auth") {
+      return <AuthPage onLogin={handleLogin} onBackToLanding={showLandingPage} />;
+    }
+
+    return <LandingPage onStartAuth={showAuthPage} onViewDemo={showDemoPage} />;
   }
 
   if (isLoadingSubjects || !hasLoadedSubjects) {

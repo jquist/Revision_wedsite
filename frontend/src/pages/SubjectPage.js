@@ -86,20 +86,22 @@ function writeSubjectPageState(subjectId, nextState) {
   writeSubjectPageStateToUrl(subjectId, nextState);
 }
 
-function getSafeTopicId(subject, topicId) {
-  if (topicId === ALL_TOPICS_ID) return ALL_TOPICS_ID;
+function getSafeTopicId(subject, topicId, allowAllTopics = true) {
+  if (topicId === ALL_TOPICS_ID && allowAllTopics) return ALL_TOPICS_ID;
   const topicExists = (subject.topics || []).some((topic) => topic.topicId === topicId);
-  return topicExists ? topicId : ALL_TOPICS_ID;
+  return topicExists ? topicId : subject.topics?.[0]?.topicId || ALL_TOPICS_ID;
 }
 
 function getSafeTab(tab) {
   return VALID_TABS.includes(tab) ? tab : "flashcards";
 }
 
-function SubjectPage({ subject, onBack, onUpdateSubject }) {
+function SubjectPage({ subject, onBack, onUpdateSubject, isDemo = false, readOnly = false }) {
+  const defaultTopicId = isDemo ? subject.topics?.[0]?.topicId || ALL_TOPICS_ID : ALL_TOPICS_ID;
+
   const [selectedTopicId, setSelectedTopicId] = useState(() => {
     const savedState = readSubjectPageState(subject.subjectId);
-    return getSafeTopicId(subject, savedState.selectedTopicId || ALL_TOPICS_ID);
+    return getSafeTopicId(subject, savedState.selectedTopicId || defaultTopicId, !isDemo);
   });
   const [activeTab, setActiveTab] = useState(() => {
     const savedState = readSubjectPageState(subject.subjectId);
@@ -113,17 +115,17 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
 
   useEffect(() => {
     const savedState = readSubjectPageState(subject.subjectId);
-    const nextTopicId = getSafeTopicId(subject, savedState.selectedTopicId || selectedTopicId || ALL_TOPICS_ID);
+    const nextTopicId = getSafeTopicId(subject, savedState.selectedTopicId || selectedTopicId || defaultTopicId, !isDemo);
     const nextTab = getSafeTab(savedState.activeTab || activeTab || "flashcards");
 
     setSelectedTopicId(nextTopicId);
     setActiveTab(nextTab);
     writeSubjectPageState(subject.subjectId, { selectedTopicId: nextTopicId, activeTab: nextTab });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subject.subjectId, subject.topics]);
+  }, [subject.subjectId, subject.topics, defaultTopicId, isDemo]);
 
   function handleSelectTopic(topicId) {
-    const safeTopicId = getSafeTopicId(subject, topicId);
+    const safeTopicId = getSafeTopicId(subject, topicId, !isDemo);
     setSelectedTopicId(safeTopicId);
     writeSubjectPageState(subject.subjectId, { selectedTopicId: safeTopicId });
   }
@@ -176,24 +178,34 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
   return (
     <div className="container py-4">
       <button className="btn btn-outline-secondary mb-3" onClick={onBack}>
-        Back
+        {isDemo ? "Back to home" : "Back"}
       </button>
 
-      <h1>{subject.subjectName}</h1>
+      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <h1 className="mb-0">{subject.subjectName}</h1>
+        {isDemo && <span className="badge rounded-pill text-bg-info">Demo mode</span>}
+      </div>
       <p className="text-muted">{subject.description}</p>
 
       <div className="row g-2 align-items-end mb-3">
         <div className="col-md">
-          <TopicSelector subject={subject} selectedTopicId={selectedTopicId} onSelectTopic={handleSelectTopic} />
+          <TopicSelector
+            subject={subject}
+            selectedTopicId={selectedTopicId}
+            onSelectTopic={handleSelectTopic}
+            showAllTopics={!isDemo}
+          />
         </div>
-        <div className="col-md-auto mb-3">
-          <button className="btn btn-success" onClick={() => setShowNewTopicForm((isOpen) => !isOpen)}>
-            {showNewTopicForm ? "Cancel New Topic" : "+ New Topic"}
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="col-md-auto mb-3">
+            <button className="btn btn-success" onClick={() => setShowNewTopicForm((isOpen) => !isOpen)}>
+              {showNewTopicForm ? "Cancel New Topic" : "+ New Topic"}
+            </button>
+          </div>
+        )}
       </div>
 
-      {showNewTopicForm && (
+      {!readOnly && showNewTopicForm && (
         <form className="card revision-card shadow-sm mb-4" onSubmit={handleAddTopic}>
           <div className="card-body">
             <h2 className="h5">Create a new topic</h2>
@@ -272,6 +284,8 @@ function SubjectPage({ subject, onBack, onUpdateSubject }) {
           onMarkFlashcard={handleMarkFlashcard}
           onAddFlashcard={handleAddFlashcard}
           onRefreshCardStats={handleRefreshCardStats}
+          readOnly={readOnly}
+          isDemo={isDemo}
         />
       )}
       {activeTab === "test" && <PracticeTest topic={selectedTopic} />}
