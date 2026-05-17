@@ -141,6 +141,17 @@ function SubjectPage({ subject, onBack, onUpdateSubject, isDemo = false, readOnl
     onUpdateSubject(updatedSubject);
   }
 
+  function handleMarkFlashcards(progressUpdates) {
+    if (!Array.isArray(progressUpdates) || progressUpdates.length === 0) return;
+
+    const updatedSubject = progressUpdates.reduce(
+      (nextSubject, update) => updateFlashcardProgress(nextSubject, update.topicId, update.flashcardId, update.wasCorrect),
+      subject
+    );
+
+    onUpdateSubject(updatedSubject);
+  }
+
   function handleAddFlashcard(newCard) {
     const updatedSubject = addFlashcard(subject, selectedTopicId, newCard);
     onUpdateSubject(updatedSubject);
@@ -282,6 +293,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject, isDemo = false, readOnl
           topic={selectedTopic}
           selectedTopicId={selectedTopicId}
           onMarkFlashcard={handleMarkFlashcard}
+          onMarkFlashcards={handleMarkFlashcards}
           onAddFlashcard={handleAddFlashcard}
           onRefreshCardStats={handleRefreshCardStats}
           readOnly={readOnly}

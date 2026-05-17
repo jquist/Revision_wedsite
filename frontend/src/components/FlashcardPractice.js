@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AddFlashcardForm from "./AddFlashcardForm";
+import FlashcardGames from "./FlashcardGames";
 import { getNextFlashcardScore, normaliseFlashcard } from "../utils/revisionHelpers";
 
 const SCORE_FILTERS = [3, 2, 1, 0, -1, -2, -3];
 
-function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlashcard, onRefreshCardStats, readOnly = false, isDemo = false }) {
+function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onMarkFlashcards, onAddFlashcard, onRefreshCardStats, readOnly = false, isDemo = false }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [selectedScores, setSelectedScores] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [practiceMode, setPracticeMode] = useState("cards");
 
   const allFlashcards = useMemo(
     () => (topic.flashcards || []).map((card, index) => normaliseFlashcard(card, index)),
@@ -64,6 +66,8 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
   }
 
   function goNext() {
+    if (flashcards.length === 0) return;
+
     setShowAnswer(false);
     setCurrentIndex((previous) => (previous >= flashcards.length - 1 ? 0 : previous + 1));
   }
@@ -74,7 +78,8 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
   }
 
   function markCard(wasCorrect) {
-    const currentCard = flashcards[currentIndex];
+    const safeCurrentIndex = flashcards.length === 0 ? 0 : Math.min(currentIndex, flashcards.length - 1);
+  const currentCard = flashcards[safeCurrentIndex];
     if (!currentCard) return;
 
     const nextScore = getNextFlashcardScore(currentCard.score ?? 0, wasCorrect);
@@ -102,7 +107,8 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
     showAllCards();
   }
 
-  const currentCard = flashcards[currentIndex];
+  const safeCurrentIndex = flashcards.length === 0 ? 0 : Math.min(currentIndex, flashcards.length - 1);
+  const currentCard = flashcards[safeCurrentIndex];
 
   return (
     <div>
@@ -150,14 +156,36 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onAddFlash
         </div>
       </div>
 
+      <div className="btn-group flex-wrap mb-3">
+        <button
+          className={`btn ${practiceMode === "cards" ? "btn-primary" : "btn-outline-primary"}`}
+          onClick={() => setPracticeMode("cards")}
+        >
+          Study Cards
+        </button>
+        <button
+          className={`btn ${practiceMode === "games" ? "btn-primary" : "btn-outline-primary"}`}
+          onClick={() => setPracticeMode("games")}
+        >
+          Flashcard Games
+        </button>
+      </div>
+
       {flashcards.length === 0 ? (
         <p>No flashcards match this filter yet.</p>
+      ) : practiceMode === "games" ? (
+        <FlashcardGames
+          flashcards={flashcards}
+          selectedTopicId={selectedTopicId}
+          onMarkFlashcards={onMarkFlashcards}
+          isDemo={isDemo}
+        />
       ) : (
         <>
           <div className="card shadow-sm mb-3 revision-card">
             <div className="card-body">
               <p className="text-muted">
-                Card {currentIndex + 1} of {flashcards.length}
+                Card {safeCurrentIndex + 1} of {flashcards.length}
                 {currentCard.topicName ? ` • ${currentCard.topicName}` : ""}
               </p>
               <h4>{currentCard.question}</h4>
