@@ -1,2 +1,0 @@
-npm install openai @supabase/supabase-js pdf-parse mammoth adm-zip
-npm install officeparser

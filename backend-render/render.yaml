@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: revision-ai-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_UPLOAD_BUCKET
+        value: lecture-files
+      - key: AI_PROVIDER
+        value: openai
