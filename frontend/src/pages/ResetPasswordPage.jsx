@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../utils/supabaseClient";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { updatePasswordSecurely } from "../lib/authApi";
 
@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
     setMessage("");
 
     if (password !== passwordAgain) {
-      setStatus("error");
+      setStatus("ready");
       setMessage("The two passwords do not match.");
       return;
     }
@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
       setStatus("success");
       setMessage("Your password has been updated. You can now sign in.");
     } catch (error) {
-      setStatus("error");
+      setStatus("ready");
       setMessage(error.message || "Could not update password.");
     }
   }
@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
             </label>
 
             {message && (
-              <p className={status === "error" ? "error-text" : "status-text"}>
+              <p className={message.includes("not match") || message.includes("Could not") || message.includes("invalid") ? "error-text" : "status-text"}>
                 {message}
               </p>
             )}

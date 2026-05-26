@@ -1,6 +1,6 @@
 import Uppy from "@uppy/core";
 import Tus from "@uppy/tus";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../utils/supabaseClient";
 import { getSupabaseAnonKey, getSupabaseUrl } from "../config/env";
 
 const RESUMABLE_THRESHOLD_BYTES = 6 * 1024 * 1024;

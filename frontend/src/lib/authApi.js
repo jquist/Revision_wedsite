@@ -1,4 +1,4 @@
-import { supabase } from "../supabaseClient";
+import { supabase } from "../utils/supabaseClient";
 import { AUTH_REDIRECTS } from "./authRedirects";
 import { getPasswordError } from "../utils/passwordStrength";
 
