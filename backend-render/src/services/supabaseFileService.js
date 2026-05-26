@@ -1,3 +1,9 @@
+const WebSocket = require("ws");
+
+if (typeof globalThis.WebSocket === "undefined") {
+  globalThis.WebSocket = WebSocket;
+}
+
 const { createClient } = require("@supabase/supabase-js");
 
 function getSupabaseAdmin() {
@@ -8,9 +14,18 @@ function getSupabaseAdmin() {
     throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
   }
 
+  if (url.includes("/rest/v1")) {
+    throw new Error("SUPABASE_URL should be the project URL only, without /rest/v1.");
+  }
+
   return createClient(url, serviceRoleKey, {
     auth: {
-      persistSession: false
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    },
+    realtime: {
+      transport: WebSocket
     }
   });
 }
@@ -34,7 +49,6 @@ async function downloadStorageFile({ bucket, filePath }) {
   const arrayBuffer = await data.arrayBuffer();
   return Buffer.from(arrayBuffer);
 }
-
 
 async function createSignedLectureUpload({ bucket, filePath }) {
   const supabase = getSupabaseAdmin();
@@ -66,4 +80,3 @@ module.exports = {
   downloadStorageFile,
   createSignedLectureUpload
 };
-

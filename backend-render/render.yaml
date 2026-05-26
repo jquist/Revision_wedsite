@@ -8,7 +8,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 22
       - key: SUPABASE_UPLOAD_BUCKET
         value: lecture-files
       - key: AI_PROVIDER
-        value: openai
+        value: gemini

@@ -31,6 +31,9 @@ app.get("/api/health", (req, res) => {
   res.json({
     ok: true,
     service: "revision-ai-backend",
+    nodeVersion: process.version,
+    hasNativeWebSocket: typeof globalThis.WebSocket !== "undefined",
+    aiProvider: process.env.AI_PROVIDER || "openai",
     time: new Date().toISOString()
   });
 });
