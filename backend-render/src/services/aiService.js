@@ -11,21 +11,36 @@ Return ONLY valid JSON.
 Do not include markdown.
 Do not include explanations outside the JSON.
 Do not wrap the JSON in code fences.
-Do not invent facts that are not supported by the lecture text.
+Do not invent facts not supported by the lecture text.
+Keep JSON simple. Use normal double-quoted JSON strings only.
+Do not put unescaped quotes inside strings.
+Do not use trailing commas.
+Do not use comments.
 Make the content exam-focused and useful.
+
+Limits per chunk:
+- max 10 flashcards
+- max 6 multiple choice questions
+- max 8 glossary terms
+- max 6 notes
 
 Return this exact structure:
 {
   "topicId": "",
   "topicName": "",
   "summary": "",
-  "notes": [],
+  "notes": [
+    {
+      "heading": "",
+      "content": ""
+    }
+  ],
   "flashcards": [
     {
       "flashcardId": "",
       "question": "",
       "answer": "",
-      "difficulty": "easy | medium | hard",
+      "difficulty": "medium",
       "tags": [],
       "score": 0,
       "correctCount": 0,
@@ -38,14 +53,19 @@ Return this exact structure:
       "questionId": "",
       "question": "",
       "type": "multiple_choice",
-      "options": [],
+      "options": ["", "", "", ""],
       "answer": "",
       "explanation": "",
-      "difficulty": "easy | medium | hard",
+      "difficulty": "medium",
       "tags": []
     }
   ],
-  "glossary": [],
+  "glossary": [
+    {
+      "term": "",
+      "definition": ""
+    }
+  ],
   "sourceFiles": []
 }
 `;
@@ -84,7 +104,7 @@ async function callGeminiJson({ prompt }) {
     throw new Error("[PROVIDER_002_MISSING_GEMINI_KEY] Missing GEMINI_API_KEY.");
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -104,7 +124,10 @@ async function callGeminiJson({ prompt }) {
         }
       ],
       generationConfig: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        topP: 0.8,
+        maxOutputTokens: 8192
       }
     })
   });
@@ -145,9 +168,13 @@ ${chunk}
 `;
 
   const raw = await callAIJson({ prompt });
-  const parsed = extractJsonObject(raw);
 
-  return normaliseGeneratedTopic(parsed, topicName);
+  try {
+    const parsed = extractJsonObject(raw);
+    return normaliseGeneratedTopic(parsed, topicName);
+  } catch (error) {
+    throw new Error(`[AI_JSON_010_CHUNK_PARSE_FAILED] ${error.message}`);
+  }
 }
 
 function uniqueByQuestion(cards) {
@@ -219,12 +246,16 @@ ${JSON.stringify(mergedRaw)}
 `;
 
   const raw = await callAIJson({ prompt });
-  const parsed = extractJsonObject(raw);
 
-  return {
-    ...normaliseGeneratedTopic(parsed, topicName),
-    sourceFiles: [fileName]
-  };
+  try {
+    const parsed = extractJsonObject(raw);
+    return {
+      ...normaliseGeneratedTopic(parsed, topicName),
+      sourceFiles: [fileName]
+    };
+  } catch (error) {
+    throw new Error(`[AI_JSON_020_MERGE_PARSE_FAILED] ${error.message}`);
+  }
 }
 
 async function generateTopicFromText({
