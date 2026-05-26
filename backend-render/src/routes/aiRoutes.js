@@ -1,10 +1,87 @@
 const express = require("express");
-const { downloadStorageFile } = require("../services/supabaseFileService");
+const { downloadStorageFile, createSignedLectureUpload } = require("../services/supabaseFileService");
 const { extractTextFromFile, chunkText } = require("../services/fileExtractService");
 const { generateTopicFromText } = require("../services/aiService");
 const { createJob, updateJob, getJob } = require("../services/jobStore");
 
 const router = express.Router();
+
+
+function safeFileName(fileName = "lecture-file") {
+  return String(fileName)
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    || "lecture-file";
+}
+
+router.get("/debug/config", (req, res) => {
+  res.json({
+    success: true,
+    config: {
+      aiProvider: process.env.AI_PROVIDER || "openai",
+      geminiModel: process.env.GEMINI_MODEL || null,
+      hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+      hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
+      hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
+      supabaseUrlLooksValid: Boolean(process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes("/rest/v1")),
+      hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      uploadBucket: process.env.SUPABASE_UPLOAD_BUCKET || "lecture-files",
+      frontendOrigin: process.env.FRONTEND_ORIGIN || ""
+    }
+  });
+});
+
+router.post("/storage/create-signed-upload", async (req, res) => {
+  try {
+    const {
+      bucket,
+      fileName,
+      userId,
+      subjectId
+    } = req.body || {};
+
+    if (!fileName) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing fileName."
+      });
+    }
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing userId."
+      });
+    }
+
+    if (!subjectId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing subjectId."
+      });
+    }
+
+    const filePath = `${userId}/${subjectId}/${Date.now()}-${safeFileName(fileName)}`;
+    const signedUpload = await createSignedLectureUpload({
+      bucket,
+      filePath
+    });
+
+    return res.json({
+      success: true,
+      upload: signedUpload
+    });
+  } catch (error) {
+    console.error("Could not create signed upload:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Could not create signed upload."
+    });
+  }
+});
+
 
 router.post("/generate-topic-from-upload", async (req, res) => {
   try {

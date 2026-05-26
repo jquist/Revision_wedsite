@@ -35,7 +35,35 @@ async function downloadStorageFile({ bucket, filePath }) {
   return Buffer.from(arrayBuffer);
 }
 
+
+async function createSignedLectureUpload({ bucket, filePath }) {
+  const supabase = getSupabaseAdmin();
+  const storageBucket = bucket || process.env.SUPABASE_UPLOAD_BUCKET || "lecture-files";
+
+  if (!filePath) {
+    throw new Error("Missing filePath.");
+  }
+
+  const { data, error } = await supabase.storage
+    .from(storageBucket)
+    .createSignedUploadUrl(filePath);
+
+  if (error) {
+    throw new Error(`Could not create signed upload URL: ${error.message}`);
+  }
+
+  return {
+    bucket: storageBucket,
+    filePath,
+    signedUrl: data.signedUrl,
+    token: data.token,
+    path: data.path
+  };
+}
+
 module.exports = {
   getSupabaseAdmin,
-  downloadStorageFile
+  downloadStorageFile,
+  createSignedLectureUpload
 };
+

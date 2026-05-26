@@ -9,6 +9,7 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
   const [progressText, setProgressText] = useState("");
   const [uploadPercent, setUploadPercent] = useState(0);
   const [error, setError] = useState("");
+  const [stage, setStage] = useState("");
 
   async function handleGenerate() {
     setError("");
@@ -20,6 +21,7 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
 
     try {
       setStatus("uploading");
+      setStage("upload");
       setProgressText("Uploading lecture file...");
       setUploadPercent(0);
 
@@ -31,6 +33,7 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
       });
 
       setStatus("generating");
+      setStage("ai");
       setProgressText("Extracting text and generating revision topic...");
 
       const response = await fetch(
@@ -51,13 +54,14 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
         }
       );
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => null);
 
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "AI generation failed.");
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || `AI generation failed (${response.status}).`);
       }
 
       setStatus("complete");
+      setStage("");
       setProgressText("Topic generated.");
 
       if (onTopicGenerated) {
@@ -65,7 +69,7 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
       }
     } catch (err) {
       setStatus("error");
-      setError(err.message || "Something went wrong.");
+      setError(`${stage === "upload" ? "Upload failed" : stage === "ai" ? "AI generation failed" : "Something went wrong"}: ${err.message || "Unknown error"}`);
       setProgressText("");
     }
   }
@@ -121,6 +125,7 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
 
       {progressText && <p className="status-text">{progressText}</p>}
       {error && <p className="error-text">{error}</p>}
+      {error && <p className="muted small">Check Render logs if this says AI generation failed. Check Supabase Storage bucket if this says upload failed.</p>}
 
       <div className="button-row">
         <button

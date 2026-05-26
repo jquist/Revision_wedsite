@@ -1,112 +1,51 @@
-import Uppy from "@uppy/core";
-import Tus from "@uppy/tus";
 import { supabase } from "../utils/supabaseClient";
-import { getSupabaseAnonKey, getSupabaseUrl } from "../config/env";
+import { getApiBaseUrl } from "../config/env";
 
-const RESUMABLE_THRESHOLD_BYTES = 6 * 1024 * 1024;
-
-function buildSafeFilePath({ file, userId, subjectId }) {
-  const safeName = file.name
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/-+/g, "-");
-
-  return `${userId}/${subjectId}/${Date.now()}-${safeName}`;
+function safeUploadError(error, fallback = "Upload failed.") {
+  if (!error) return fallback;
+  if (typeof error === "string") return error;
+  return error.message || error.error_description || error.error || fallback;
 }
 
-async function uploadStandard({ file, bucket, filePath, onProgress }) {
-  if (onProgress) onProgress(5);
+async function createSignedUpload({ file, userId, subjectId, bucket }) {
+  const response = await fetch(`${getApiBaseUrl()}/api/ai/storage/create-signed-upload`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      bucket,
+      fileName: file.name,
+      userId,
+      subjectId
+    })
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok || !payload?.success) {
+    throw new Error(payload?.error || `Could not create signed upload URL (${response.status}).`);
+  }
+
+  return payload.upload;
+}
+
+async function uploadToSignedUrl({ file, bucket, filePath, token, onProgress }) {
+  if (onProgress) onProgress(10);
 
   const { data, error } = await supabase.storage
     .from(bucket)
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type || undefined
+    .uploadToSignedUrl(filePath, token, file, {
+      contentType: file.type || "application/octet-stream"
     });
 
   if (error) {
-    throw error;
+    throw new Error(safeUploadError(error));
   }
 
   if (onProgress) onProgress(100);
 
   return data;
-}
-
-async function uploadResumable({ file, bucket, filePath, onProgress }) {
-  const supabaseUrl = getSupabaseUrl();
-  const anonKey = getSupabaseAnonKey();
-
-  if (!supabaseUrl || !anonKey) {
-    return uploadStandard({ file, bucket, filePath, onProgress });
-  }
-
-  const uppy = new Uppy({
-    autoProceed: false,
-    restrictions: {
-      maxNumberOfFiles: 1
-    }
-  });
-
-  uppy.use(Tus, {
-    endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
-    headers: {
-      authorization: `Bearer ${anonKey}`,
-      apikey: anonKey
-    },
-    uploadDataDuringCreation: true,
-    removeFingerprintOnSuccess: true,
-    chunkSize: 6 * 1024 * 1024,
-    allowedMetaFields: [
-      "bucketName",
-      "objectName",
-      "contentType",
-      "cacheControl"
-    ]
-  });
-
-  uppy.on("upload-progress", (fileData, progress) => {
-    if (!onProgress) return;
-
-    const percentage = progress.bytesTotal
-      ? Math.round((progress.bytesUploaded / progress.bytesTotal) * 100)
-      : 0;
-
-    onProgress(percentage);
-  });
-
-  uppy.addFile({
-    name: file.name,
-    type: file.type || "application/octet-stream",
-    data: file,
-    meta: {
-      bucketName: bucket,
-      objectName: filePath,
-      contentType: file.type || "application/octet-stream",
-      cacheControl: "3600"
-    }
-  });
-
-  try {
-    const result = await uppy.upload();
-
-    if (result.failed?.length) {
-      throw result.failed[0].error || new Error("Resumable upload failed.");
-    }
-
-    return result.successful?.[0] || null;
-  } finally {
-    try {
-      if (typeof uppy.cancelAll === "function") {
-        uppy.cancelAll();
-      }
-      if (typeof uppy.destroy === "function") {
-        uppy.destroy();
-      }
-    } catch (cleanupError) {
-      // Ignore Uppy cleanup differences across versions.
-    }
-  }
 }
 
 export async function uploadLectureFile({
@@ -128,31 +67,26 @@ export async function uploadLectureFile({
     throw new Error("Missing subjectId.");
   }
 
-  const filePath = buildSafeFilePath({
+  if (onProgress) onProgress(3);
+
+  const signedUpload = await createSignedUpload({
     file,
     userId,
-    subjectId
+    subjectId,
+    bucket
   });
 
-  if (file.size >= RESUMABLE_THRESHOLD_BYTES) {
-    await uploadResumable({
-      file,
-      bucket,
-      filePath,
-      onProgress
-    });
-  } else {
-    await uploadStandard({
-      file,
-      bucket,
-      filePath,
-      onProgress
-    });
-  }
+  await uploadToSignedUrl({
+    file,
+    bucket: signedUpload.bucket || bucket,
+    filePath: signedUpload.filePath || signedUpload.path,
+    token: signedUpload.token,
+    onProgress
+  });
 
   return {
-    bucket,
-    filePath,
+    bucket: signedUpload.bucket || bucket,
+    filePath: signedUpload.filePath || signedUpload.path,
     fileName: file.name,
     mimeType: file.type,
     sizeBytes: file.size
