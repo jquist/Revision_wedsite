@@ -16,7 +16,7 @@ function extractJsonObject(value) {
     const lastBrace = text.lastIndexOf("}");
 
     if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-      throw firstError;
+      throw new Error(`[JSON_001_PARSE_FAILED] ${firstError.message}`);
     }
 
     return JSON.parse(text.slice(firstBrace, lastBrace + 1));

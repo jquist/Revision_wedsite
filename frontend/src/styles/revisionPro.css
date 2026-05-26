@@ -395,3 +395,54 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+
+.ai-error-card {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(244, 63, 94, 0.24);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.ai-error-code {
+  margin: 0 0 4px;
+  color: #be123c;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-debug-box {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.ai-debug-title {
+  margin: 0 0 8px;
+  color: #334155;
+  font-weight: 900;
+}
+
+.ai-debug-box ol {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.ai-debug-step {
+  margin-bottom: 0.35rem;
+  color: #475569;
+}
+
+.ai-debug-step strong {
+  color: #0f172a;
+}
+
+.ai-debug-step.error,
+.ai-debug-step.error strong {
+  color: #be123c;
+}

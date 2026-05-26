@@ -58,7 +58,7 @@ async function callOpenAIJson({ prompt }) {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY.");
+    throw new Error("[PROVIDER_001_MISSING_OPENAI_KEY] Missing OPENAI_API_KEY.");
   }
 
   const client = new OpenAI({ apiKey });
@@ -81,7 +81,7 @@ async function callGeminiJson({ prompt }) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error("Missing GEMINI_API_KEY.");
+    throw new Error("[PROVIDER_002_MISSING_GEMINI_KEY] Missing GEMINI_API_KEY.");
   }
 
   const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
@@ -112,7 +112,7 @@ async function callGeminiJson({ prompt }) {
   const payload = await response.json();
 
   if (!response.ok) {
-    throw new Error(payload?.error?.message || "Gemini request failed.");
+    throw new Error(`[PROVIDER_003_GEMINI_REQUEST_FAILED] ${payload?.error?.message || "Gemini request failed."}`);
   }
 
   return payload?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -234,7 +234,7 @@ async function generateTopicFromText({
   onProgress
 }) {
   if (!textChunks.length) {
-    throw new Error("No text could be extracted from the file.");
+    throw new Error("[AI_TEXT_001_NO_CHUNKS] No text could be extracted from the file.");
   }
 
   const generatedTopics = [];

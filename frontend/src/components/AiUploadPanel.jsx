@@ -2,41 +2,159 @@ import React, { useState } from "react";
 import { getApiBaseUrl } from "../config/env";
 import { uploadLectureFile } from "../lib/supabaseStorage";
 
+function formatError(stage, error) {
+  const message = error?.message || String(error || "Unknown error");
+  const codeMatch = message.match(/^\[([A-Z0-9_-]+)\]\s*(.*)$/);
+
+  if (codeMatch) {
+    return {
+      code: codeMatch[1],
+      message: codeMatch[2] || message,
+      stage
+    };
+  }
+
+  return {
+    code: stage || "UNKNOWN_STAGE",
+    message,
+    stage
+  };
+}
+
+function DebugStepList({ steps }) {
+  if (!steps.length) return null;
+
+  return (
+    <div className="ai-debug-box">
+      <p className="ai-debug-title">Debug steps</p>
+      <ol>
+        {steps.map((step, index) => (
+          <li key={`${step.code}-${index}`} className={`ai-debug-step ${step.status}`}>
+            <strong>{step.code}</strong> — {step.message}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
   const [file, setFile] = useState(null);
   const [topicName, setTopicName] = useState("");
   const [status, setStatus] = useState("idle");
   const [progressText, setProgressText] = useState("");
   const [uploadPercent, setUploadPercent] = useState(0);
-  const [error, setError] = useState("");
-  const [stage, setStage] = useState("");
+  const [error, setError] = useState(null);
+  const [debugSteps, setDebugSteps] = useState([]);
+
+  function resetDebug() {
+    setDebugSteps([]);
+    setError(null);
+  }
+
+  function addStep(code, message, statusValue = "ok") {
+    setDebugSteps((current) => [
+      ...current,
+      {
+        code,
+        message,
+        status: statusValue,
+        at: new Date().toISOString()
+      }
+    ]);
+  }
+
+  async function fetchJsonWithDebug(url, options, stageCode) {
+    let response;
+    let rawText = "";
+
+    try {
+      response = await fetch(url, options);
+    } catch (fetchError) {
+      throw new Error(`[${stageCode}_NETWORK] ${fetchError.message || "Network request failed."}`);
+    }
+
+    try {
+      rawText = await response.text();
+    } catch (readError) {
+      throw new Error(`[${stageCode}_READ_RESPONSE] Could not read server response.`);
+    }
+
+    let payload = null;
+    try {
+      payload = rawText ? JSON.parse(rawText) : null;
+    } catch (jsonError) {
+      throw new Error(`[${stageCode}_INVALID_JSON] Server returned non-JSON response: ${rawText.slice(0, 160)}`);
+    }
+
+    if (!response.ok || !payload?.success) {
+      const backendCode = payload?.code ? `${stageCode}_${payload.code}` : `${stageCode}_SERVER_ERROR`;
+      throw new Error(`[${backendCode}] ${payload?.error || `Request failed with status ${response.status}.`}`);
+    }
+
+    return payload;
+  }
 
   async function handleGenerate() {
-    setError("");
+    resetDebug();
 
     if (!file) {
-      setError("Choose a lecture file first.");
+      const formatted = {
+        code: "AI-001_NO_FILE",
+        message: "Choose a lecture file first.",
+        stage: "validate"
+      };
+      setError(formatted);
+      addStep(formatted.code, formatted.message, "error");
+      return;
+    }
+
+    if (!userId) {
+      const formatted = {
+        code: "AI-002_NO_USER",
+        message: "No logged-in user id was passed to the AI upload panel.",
+        stage: "validate"
+      };
+      setError(formatted);
+      addStep(formatted.code, formatted.message, "error");
+      return;
+    }
+
+    if (!subjectId) {
+      const formatted = {
+        code: "AI-003_NO_SUBJECT",
+        message: "No subject id was passed to the AI upload panel.",
+        stage: "validate"
+      };
+      setError(formatted);
+      addStep(formatted.code, formatted.message, "error");
       return;
     }
 
     try {
       setStatus("uploading");
-      setStage("upload");
       setProgressText("Uploading lecture file...");
       setUploadPercent(0);
 
+      addStep("AI-010_START", `Starting import for ${file.name}.`);
+
+      addStep("AI-020_SIGNED_UPLOAD", "Requesting signed upload URL from Render backend.");
       const uploaded = await uploadLectureFile({
         file,
         userId,
         subjectId,
-        onProgress: setUploadPercent
+        onProgress: setUploadPercent,
+        onDebugStep: addStep
       });
 
+      addStep("AI-030_UPLOAD_DONE", `Uploaded file to Supabase Storage path: ${uploaded.filePath}.`);
+
       setStatus("generating");
-      setStage("ai");
       setProgressText("Extracting text and generating revision topic...");
 
-      const response = await fetch(
+      addStep("AI-040_GENERATE_REQUEST", "Calling Render backend to extract text and generate topic.");
+
+      const payload = await fetchJsonWithDebug(
         `${getApiBaseUrl()}/api/ai/generate-topic-from-upload`,
         {
           method: "POST",
@@ -51,26 +169,28 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
             subjectId,
             topicName: topicName || file.name.replace(/\.[^.]+$/, "")
           })
-        }
+        },
+        "AI-040"
       );
 
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error || `AI generation failed (${response.status}).`);
+      if (!payload.topic) {
+        throw new Error("[AI-050_NO_TOPIC] Backend succeeded but did not return a topic.");
       }
 
       setStatus("complete");
-      setStage("");
       setProgressText("Topic generated.");
+      addStep("AI-060_COMPLETE", "Topic generated and returned to the website.");
 
       if (onTopicGenerated) {
         onTopicGenerated(payload.topic);
       }
     } catch (err) {
+      const formatted = formatError("import", err);
+      console.error("AI_IMPORT_DEBUG_ERROR", formatted, err);
       setStatus("error");
-      setError(`${stage === "upload" ? "Upload failed" : stage === "ai" ? "AI generation failed" : "Something went wrong"}: ${err.message || "Unknown error"}`);
+      setError(formatted);
       setProgressText("");
+      addStep(formatted.code, formatted.message, "error");
     }
   }
 
@@ -124,8 +244,15 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
       )}
 
       {progressText && <p className="status-text">{progressText}</p>}
-      {error && <p className="error-text">{error}</p>}
-      {error && <p className="muted small">Check Render logs if this says AI generation failed. Check Supabase Storage bucket if this says upload failed.</p>}
+
+      {error && (
+        <div className="ai-error-card">
+          <p className="ai-error-code">{error.code}</p>
+          <p className="error-text">{error.message}</p>
+        </div>
+      )}
+
+      <DebugStepList steps={debugSteps} />
 
       <div className="button-row">
         <button
