@@ -72,6 +72,13 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onMarkFlas
     setCurrentIndex((previous) => (previous >= flashcards.length - 1 ? 0 : previous + 1));
   }
 
+  function goPrevious() {
+    if (flashcards.length === 0) return;
+
+    setShowAnswer(false);
+    setCurrentIndex((previous) => (previous <= 0 ? flashcards.length - 1 : previous - 1));
+  }
+
   function stayOnCurrentSlotAfterFilteredCardLeaves() {
     setShowAnswer(false);
     setCurrentIndex((previous) => Math.max(0, previous));
@@ -111,7 +118,7 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onMarkFlas
   const currentCard = flashcards[safeCurrentIndex];
 
   return (
-    <div>
+    <div className="revision-content-stack">
       <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
         <div>
           <h2>Flashcards</h2>
@@ -197,12 +204,17 @@ function FlashcardPractice({ topic, selectedTopicId, onMarkFlashcard, onMarkFlas
                 {isDemo ? " | demo progress resets when you leave" : ""}
               </div>
 
-              <button className="btn btn-primary me-2" onClick={() => setShowAnswer(!showAnswer)}>
-                {showAnswer ? "Hide Answer" : "Show Answer"}
-              </button>
-              <button className="btn btn-outline-secondary" onClick={goNext}>
-                Skip
-              </button>
+              <div className="d-flex flex-wrap gap-2">
+                <button className="btn btn-primary" onClick={() => setShowAnswer(!showAnswer)}>
+                  {showAnswer ? "Hide Answer" : "Show Answer"}
+                </button>
+                <button className="btn btn-outline-secondary" onClick={goPrevious}>
+                  Previous
+                </button>
+                <button className="btn btn-outline-secondary" onClick={goNext}>
+                  Skip
+                </button>
+              </div>
             </div>
           </div>
           <div className="d-flex gap-2">

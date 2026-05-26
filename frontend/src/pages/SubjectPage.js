@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import TopicSelector from "../components/TopicSelector";
 import FlashcardPractice from "../components/FlashcardPractice";
@@ -116,8 +117,6 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
   const [editingTopic, setEditingTopic] = useState(null);
 
   const selectedTopic = findTopicById(subject, selectedTopicId);
-
-
   const canEditSelectedTopic = !readOnly && selectedTopicId !== ALL_TOPICS_ID && selectedTopic;
 
   function makeUniqueTopic(topic) {
@@ -254,149 +253,158 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
   }
 
   return (
-    <div className="container py-4">
-      <button className="btn btn-outline-secondary mb-3" onClick={onBack}>
-        {isDemo ? "Back to home" : "Back"}
-      </button>
-
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
-        <h1 className="mb-0">{subject.subjectName}</h1>
-        {isDemo && <span className="badge rounded-pill text-bg-info">Demo mode</span>}
-      </div>
-      <p className="text-muted">{subject.description}</p>
-
-
-      {!readOnly && currentUserId && (
-        <div className="mb-4">
-          <AiUploadPanel
-            userId={currentUserId}
-            subjectId={subject.subjectId}
-            onTopicGenerated={handleTopicGenerated}
-          />
-        </div>
-      )}
-
-      <div className="row g-2 align-items-end mb-3">
-        <div className="col-md">
-          <TopicSelector
-            subject={subject}
-            selectedTopicId={selectedTopicId}
-            onSelectTopic={handleSelectTopic}
-            showAllTopics={!isDemo}
-          />
-        </div>
-        {!readOnly && (
-          <div className="col-md-auto mb-3">
-            <div className="d-flex flex-wrap gap-2">
-              {canEditSelectedTopic && (
-                <button className="btn btn-outline-primary" type="button" onClick={() => setEditingTopic(selectedTopic)}>
-                  Edit Topic
-                </button>
-              )}
-              <button className="btn btn-success" type="button" onClick={() => setShowNewTopicForm((isOpen) => !isOpen)}>
-                {showNewTopicForm ? "Cancel New Topic" : "+ New Topic"}
+    <div className="revision-pro-shell">
+      <div className="revision-page-container subject-workspace">
+        <section className="revision-glass-card subject-hero-card">
+          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <button className="btn btn-outline-secondary mb-3" onClick={onBack}>
+                {isDemo ? "Back to home" : "Back"}
               </button>
+              <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <h1 className="mb-0">{subject.subjectName}</h1>
+                {isDemo && <span className="badge rounded-pill text-bg-info">Demo mode</span>}
+              </div>
+              <p className="subject-page-description mb-0">{subject.description}</p>
             </div>
           </div>
-        )}
-      </div>
 
-      {!readOnly && showNewTopicForm && (
-        <form className="card revision-card shadow-sm mb-4" onSubmit={handleAddTopic}>
-          <div className="card-body">
-            <h2 className="h5">Create a new topic</h2>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="new-topic-name">Topic name</label>
-              <input
-                id="new-topic-name"
-                className="form-control"
-                value={newTopicName}
-                onChange={(event) => setNewTopicName(event.target.value)}
-                placeholder="e.g. Week 1 - Networking Basics"
+          {!readOnly && currentUserId && (
+            <div className="mt-4">
+              <AiUploadPanel
+                userId={currentUserId}
+                subjectId={subject.subjectId}
+                onTopicGenerated={handleTopicGenerated}
               />
             </div>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="new-topic-summary">Summary / description optional</label>
-              <textarea
-                id="new-topic-summary"
-                className="form-control"
-                rows="3"
-                value={newTopicSummary}
-                onChange={(event) => setNewTopicSummary(event.target.value)}
-                placeholder="Briefly describe what this topic is for."
+          )}
+        </section>
+
+        <section className="revision-glass-card workspace-toolbar-card">
+          <div className="row g-3 align-items-end mb-1">
+            <div className="col-md">
+              <TopicSelector
+                subject={subject}
+                selectedTopicId={selectedTopicId}
+                onSelectTopic={handleSelectTopic}
+                showAllTopics={!isDemo}
               />
             </div>
-            <div className="d-flex gap-2">
-              <button className="btn btn-primary" type="submit" disabled={!newTopicName.trim()}>
-                Create Topic
-              </button>
-              <button
-                className="btn btn-outline-secondary"
-                type="button"
-                onClick={() => {
-                  setShowNewTopicForm(false);
-                  setNewTopicName("");
-                  setNewTopicSummary("");
-                }}
-              >
-                Cancel
-              </button>
-            </div>
+            {!readOnly && (
+              <div className="col-md-auto">
+                <div className="d-flex flex-wrap gap-2 workspace-toolbar-actions">
+                  {canEditSelectedTopic && (
+                    <button className="btn btn-outline-primary" type="button" onClick={() => setEditingTopic(selectedTopic)}>
+                      Edit Topic
+                    </button>
+                  )}
+                  <button className="btn btn-success" type="button" onClick={() => setShowNewTopicForm((isOpen) => !isOpen)}>
+                    {showNewTopicForm ? "Cancel New Topic" : "+ New Topic"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </form>
-      )}
 
-      <div className="btn-group flex-wrap mb-4">
-        <button
-          className={`btn ${activeTab === "flashcards" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => handleSelectTab("flashcards")}
-        >
-          Flashcards
-        </button>
-        <button
-          className={`btn ${activeTab === "test" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => handleSelectTab("test")}
-        >
-          Practice Test
-        </button>
-        <button
-          className={`btn ${activeTab === "notes" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => handleSelectTab("notes")}
-        >
-          Notes
-        </button>
-        <button
-          className={`btn ${activeTab === "glossary" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => handleSelectTab("glossary")}
-        >
-          Glossary
-        </button>
-      </div>
+          {!readOnly && showNewTopicForm && (
+            <form className="card revision-card shadow-sm mb-4" onSubmit={handleAddTopic}>
+              <div className="card-body">
+                <h2 className="h5">Create a new topic</h2>
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="new-topic-name">Topic name</label>
+                  <input
+                    id="new-topic-name"
+                    className="form-control"
+                    value={newTopicName}
+                    onChange={(event) => setNewTopicName(event.target.value)}
+                    placeholder="e.g. Week 1 - Networking Basics"
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="new-topic-summary">Summary / description optional</label>
+                  <textarea
+                    id="new-topic-summary"
+                    className="form-control"
+                    rows="3"
+                    value={newTopicSummary}
+                    onChange={(event) => setNewTopicSummary(event.target.value)}
+                    placeholder="Briefly describe what this topic is for."
+                  />
+                </div>
+                <div className="d-flex gap-2">
+                  <button className="btn btn-primary" type="submit" disabled={!newTopicName.trim()}>
+                    Create Topic
+                  </button>
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    onClick={() => {
+                      setShowNewTopicForm(false);
+                      setNewTopicName("");
+                      setNewTopicSummary("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
 
-      {activeTab === "flashcards" && (
-        <FlashcardPractice
-          topic={selectedTopic}
-          selectedTopicId={selectedTopicId}
-          onMarkFlashcard={handleMarkFlashcard}
-          onMarkFlashcards={handleMarkFlashcards}
-          onAddFlashcard={handleAddFlashcard}
-          onRefreshCardStats={handleRefreshCardStats}
-          readOnly={readOnly}
-          isDemo={isDemo}
+          <div className="btn-group flex-wrap subject-tab-row">
+            <button
+              className={`btn ${activeTab === "flashcards" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => handleSelectTab("flashcards")}
+            >
+              Flashcards
+            </button>
+            <button
+              className={`btn ${activeTab === "test" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => handleSelectTab("test")}
+            >
+              Practice Test
+            </button>
+            <button
+              className={`btn ${activeTab === "notes" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => handleSelectTab("notes")}
+            >
+              Notes
+            </button>
+            <button
+              className={`btn ${activeTab === "glossary" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => handleSelectTab("glossary")}
+            >
+              Glossary
+            </button>
+          </div>
+        </section>
+
+        <section className="revision-glass-card workspace-content-card">
+          {activeTab === "flashcards" && (
+            <FlashcardPractice
+              topic={selectedTopic}
+              selectedTopicId={selectedTopicId}
+              onMarkFlashcard={handleMarkFlashcard}
+              onMarkFlashcards={handleMarkFlashcards}
+              onAddFlashcard={handleAddFlashcard}
+              onRefreshCardStats={handleRefreshCardStats}
+              readOnly={readOnly}
+              isDemo={isDemo}
+            />
+          )}
+          {activeTab === "test" && <PracticeTest topic={selectedTopic} />}
+          {activeTab === "notes" && <RevisionNotes topic={selectedTopic} />}
+          {activeTab === "glossary" && <Glossary topic={selectedTopic} />}
+        </section>
+
+        <TopicEditorModal
+          show={Boolean(editingTopic)}
+          topic={editingTopic}
+          onSave={handleSaveEditedTopic}
+          onDelete={handleDeleteEditedTopic}
+          onClose={() => setEditingTopic(null)}
         />
-      )}
-      {activeTab === "test" && <PracticeTest topic={selectedTopic} />}
-      {activeTab === "notes" && <RevisionNotes topic={selectedTopic} />}
-      {activeTab === "glossary" && <Glossary topic={selectedTopic} />}
-
-
-      <TopicEditorModal
-        show={Boolean(editingTopic)}
-        topic={editingTopic}
-        onSave={handleSaveEditedTopic}
-        onDelete={handleDeleteEditedTopic}
-        onClose={() => setEditingTopic(null)}
-      />
+      </div>
     </div>
   );
 }

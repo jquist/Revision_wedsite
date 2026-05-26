@@ -87,15 +87,26 @@ async function uploadResumable({ file, bucket, filePath, onProgress }) {
     }
   });
 
-  const result = await uppy.upload();
+  try {
+    const result = await uppy.upload();
 
-  uppy.close();
+    if (result.failed?.length) {
+      throw result.failed[0].error || new Error("Resumable upload failed.");
+    }
 
-  if (result.failed?.length) {
-    throw result.failed[0].error || new Error("Resumable upload failed.");
+    return result.successful?.[0] || null;
+  } finally {
+    try {
+      if (typeof uppy.cancelAll === "function") {
+        uppy.cancelAll();
+      }
+      if (typeof uppy.destroy === "function") {
+        uppy.destroy();
+      }
+    } catch (cleanupError) {
+      // Ignore Uppy cleanup differences across versions.
+    }
   }
-
-  return result.successful?.[0] || null;
 }
 
 export async function uploadLectureFile({
