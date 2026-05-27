@@ -6,6 +6,9 @@ import SubjectPage from "./pages/SubjectPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthConfirmedPage from "./pages/AuthConfirmedPage";
+import ContactPage from "./pages/ContactPage";
+import SettingsPage from "./pages/SettingsPage";
+import SiteFooter from "./components/SiteFooter";
 import { demoSubject as baseDemoSubject } from "./data/demoSubject";
 import { createBlankSubject } from "./utils/revisionHelpers";
 import {
@@ -394,6 +397,10 @@ function App() {
 
   const directPath = window.location.pathname;
 
+  if (directPath === "/contact") {
+    return <ContactPage />;
+  }
+
   if (directPath === "/forgot-password") {
     return <ForgotPasswordPage />;
   }
@@ -406,7 +413,15 @@ function App() {
     return <AuthConfirmedPage />;
   }
 
+  if (directPath === "/settings" && currentUser) {
+    return <SettingsPage currentUser={currentUser} onLogout={handleLogout} />;
+  }
+
   if (!currentUser) {
+    if (directPath === "/settings") {
+      return <AuthPage onLogin={handleLogin} onBackToLanding={showLandingPage} />;
+    }
+
     if (visitorMode === "demo") {
       return (
         <>
@@ -420,6 +435,9 @@ function App() {
                 <button className="btn btn-outline-secondary" onClick={showLandingPage}>
                   Home
                 </button>
+                <a className="btn btn-outline-secondary" href="/contact">
+                  Contact
+                </a>
                 <button className="btn btn-outline-primary" onClick={resetDemoSubject}>
                   Reset demo
                 </button>
@@ -443,6 +461,7 @@ function App() {
               readOnly
             />
           </main>
+          <SiteFooter />
         </>
       );
     }
@@ -466,9 +485,17 @@ function App() {
             <h1 className="h3 mb-0">ForgeNotes</h1>
             <p className="text-muted mb-0">Flashcards, tests, notes, and glossary.</p>
           </div>
-          <button className="btn btn-outline-secondary" onClick={handleLogout}>
-            Log out
-          </button>
+          <div className="d-flex flex-wrap gap-2">
+            <a className="btn btn-outline-secondary" href="/contact">
+              Contact
+            </a>
+            <a className="btn btn-outline-primary" href="/settings">
+              Settings
+            </a>
+            <button className="btn btn-outline-secondary" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -491,6 +518,7 @@ function App() {
           />
         )}
       </main>
+      <SiteFooter />
     </>
   );
 }

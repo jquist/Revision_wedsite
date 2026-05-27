@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { requestPasswordReset } from "../lib/authApi";
+import SiteFooter from "../components/SiteFooter";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
+    <>
     <main className="revision-pro-shell auth-page">
       <section className="revision-glass-card auth-card">
         <p className="eyebrow">Account Help</p>
@@ -57,5 +59,7 @@ export default function ForgotPasswordPage() {
         </form>
       </section>
     </main>
+    <SiteFooter />
+    </>
   );
 }

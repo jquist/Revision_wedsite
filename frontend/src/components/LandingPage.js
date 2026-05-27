@@ -1,7 +1,9 @@
 import React from "react";
+import SiteFooter from "./SiteFooter";
 
 function LandingPage({ onStartAuth, onViewDemo }) {
   return (
+    <>
     <main className="landing-page overflow-hidden">
       <section className="landing-hero position-relative">
         <div className="landing-blob landing-blob-one" />
@@ -11,12 +13,17 @@ function LandingPage({ onStartAuth, onViewDemo }) {
         <div className="container position-relative py-5">
           <nav className="landing-nav d-flex justify-content-between align-items-center mb-5">
             <div className="brand-mark d-flex align-items-center gap-2">
-              <span className="brand-icon">R</span>
+              <span className="brand-icon">FN</span>
               <span className="fw-bold">ForgeNotes</span>
             </div>
-            <button className="btn btn-outline-success rounded-pill px-4" onClick={onStartAuth}>
-              Log in
-            </button>
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              <a className="btn btn-light rounded-pill px-3 shadow-sm" href="/contact">
+                Contact
+              </a>
+              <button className="btn btn-outline-success rounded-pill px-4" onClick={onStartAuth}>
+                Log in
+              </button>
+            </div>
           </nav>
 
           <div className="row align-items-center g-5">
@@ -124,6 +131,8 @@ function LandingPage({ onStartAuth, onViewDemo }) {
         </div>
       </section>
     </main>
+    <SiteFooter />
+    </>
   );
 }
 

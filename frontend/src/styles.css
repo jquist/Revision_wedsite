@@ -316,3 +316,102 @@ body {
   border-radius: 0.8rem;
   background: #edf7ef;
 }
+
+/* General website/footer pages */
+.brand-icon {
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.brand-icon-small {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.site-footer {
+  background: #ffffff;
+  border-top: 1px solid rgba(25, 135, 84, 0.14);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1rem;
+  align-items: center;
+}
+
+.footer-links a {
+  color: #146c43;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+.public-page-shell {
+  min-height: calc(100vh - 110px);
+  display: grid;
+  align-items: center;
+}
+
+.public-page-card {
+  width: min(980px, 100%);
+  margin: 0 auto;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.contact-card {
+  padding: 1.1rem;
+  border: 1px solid #dcefe0;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.settings-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings-hero-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.settings-card {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.settings-email {
+  width: fit-content;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.9rem;
+  background: rgba(25, 135, 84, 0.09);
+  color: #146c43;
+  font-weight: 800;
+}
+
+@media (max-width: 767.98px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-nav {
+    gap: 1rem;
+  }
+}

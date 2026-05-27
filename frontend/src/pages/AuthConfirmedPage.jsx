@@ -1,7 +1,9 @@
 import React from "react";
+import SiteFooter from "../components/SiteFooter";
 
 export default function AuthConfirmedPage() {
   return (
+    <>
     <main className="revision-pro-shell auth-page">
       <section className="revision-glass-card auth-card">
         <p className="eyebrow">Email Verified</p>
@@ -15,5 +17,7 @@ export default function AuthConfirmedPage() {
         </a>
       </section>
     </main>
+    <SiteFooter />
+    </>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../utils/supabaseClient";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { updatePasswordSecurely } from "../lib/authApi";
+import SiteFooter from "../components/SiteFooter";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -71,6 +72,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
+    <>
     <main className="revision-pro-shell auth-page">
       <section className="revision-glass-card auth-card">
         <p className="eyebrow">Password Reset</p>
@@ -79,6 +81,20 @@ export default function ResetPasswordPage() {
 
         {status === "checking" ? (
           <p className="status-text">Checking reset link...</p>
+        ) : status === "error" ? (
+          <div className="auth-form">
+            <p className="error-text">{message}</p>
+            <a className="revision-btn revision-btn-primary" href="/forgot-password">
+              Request a new reset link
+            </a>
+          </div>
+        ) : status === "success" ? (
+          <div className="auth-form">
+            <p className="status-text">{message}</p>
+            <a className="revision-btn revision-btn-primary" href="/">
+              Continue to ForgeNotes
+            </a>
+          </div>
         ) : (
           <form className="auth-form" onSubmit={handleSubmit}>
             <label className="field-block">
@@ -114,7 +130,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               className="revision-btn revision-btn-primary"
-              disabled={status === "loading" || status === "success"}
+              disabled={status === "loading"}
             >
               {status === "loading" ? "Updating..." : "Update password"}
             </button>
@@ -122,5 +138,7 @@ export default function ResetPasswordPage() {
         )}
       </section>
     </main>
+    <SiteFooter />
+    </>
   );
 }
