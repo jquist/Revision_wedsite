@@ -92,7 +92,7 @@ router.post("/storage/create-signed-upload", async (req, res) => {
 
 router.post("/generate-topic-from-upload", async (req, res) => {
   try {
-    const { bucket, filePath, fileName, mimeType, topicName } = req.body || {};
+    const { bucket, filePath, fileName, mimeType, topicName, contentSettings } = req.body || {};
 
     if (!filePath) {
       return sendError(res, 400, "AI_001_MISSING_FILE_PATH", "Missing filePath.");
@@ -156,7 +156,8 @@ router.post("/generate-topic-from-upload", async (req, res) => {
       topic = await generateTopicFromText({
         textChunks: chunks,
         topicName: topicName || fileName || "AI Generated Topic",
-        fileName: fileName || filePath
+        fileName: fileName || filePath,
+        contentSettings
       });
     } catch (error) {
       return sendError(res, 500, "AI_041_AI_PROVIDER_FAILED", error, {
@@ -198,7 +199,7 @@ router.post("/jobs/generate-topic-from-upload", async (req, res) => {
 
   setImmediate(async () => {
     try {
-      const { bucket, filePath, fileName, mimeType, topicName } = req.body || {};
+      const { bucket, filePath, fileName, mimeType, topicName, contentSettings } = req.body || {};
 
       updateJob(job.jobId, {
         status: "running",
@@ -233,6 +234,7 @@ router.post("/jobs/generate-topic-from-upload", async (req, res) => {
         textChunks: chunks,
         topicName: topicName || fileName || "AI Generated Topic",
         fileName: fileName || filePath,
+        contentSettings,
         onProgress: (progressUpdate) => {
           updateJob(job.jobId, progressUpdate);
         }

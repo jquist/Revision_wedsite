@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { getApiBaseUrl } from "../config/env";
 import { uploadLectureFile } from "../lib/supabaseStorage";
 
+const MAX_UPLOAD_MB = Number(process.env.REACT_APP_MAX_UPLOAD_MB || 75);
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
 function formatError(stage, error) {
   const message = error?.message || String(error || "Unknown error");
   const codeMatch = message.match(/^\[([A-Z0-9_-]+)\]\s*(.*)$/);
@@ -21,16 +24,18 @@ function formatError(stage, error) {
   };
 }
 
-function DebugStepList({ steps }) {
+function ProgressStepList({ steps, status }) {
   if (!steps.length) return null;
 
   return (
-    <div className="ai-debug-box">
-      <p className="ai-debug-title">Debug steps</p>
+    <div className="ai-progress-box">
+      <p className="ai-progress-title">
+        {status === "error" ? "Progress before error" : "Progress"}
+      </p>
       <ol>
         {steps.map((step, index) => (
-          <li key={`${step.code}-${index}`} className={`ai-debug-step ${step.status}`}>
-            <strong>{step.code}</strong> — {step.message}
+          <li key={`${step.code}-${index}`} className={`ai-progress-step ${step.status}`}>
+            <span>{step.message}</span>
           </li>
         ))}
       </ol>
@@ -41,23 +46,36 @@ function DebugStepList({ steps }) {
 export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
   const [file, setFile] = useState(null);
   const [topicName, setTopicName] = useState("");
+  const [detailLevel, setDetailLevel] = useState("balanced");
+  const [flashcardTarget, setFlashcardTarget] = useState(16);
+  const [quizQuestionTarget, setQuizQuestionTarget] = useState(8);
+  const [noteTarget, setNoteTarget] = useState(6);
+  const [glossaryTarget, setGlossaryTarget] = useState(8);
   const [status, setStatus] = useState("idle");
   const [progressText, setProgressText] = useState("");
   const [uploadPercent, setUploadPercent] = useState(0);
   const [error, setError] = useState(null);
-  const [debugSteps, setDebugSteps] = useState([]);
+  const [progressSteps, setProgressSteps] = useState([]);
 
-  function resetDebug() {
-    setDebugSteps([]);
+  function resetProgress() {
+    setProgressSteps([]);
     setError(null);
   }
 
   function addStep(code, message, statusValue = "ok") {
-    setDebugSteps((current) => [
+    const friendlyMessage = message
+      .replace("Requesting signed upload URL from Render backend.", "Preparing secure upload link.")
+      .replace("Requesting signed upload URL.", "Preparing secure upload link.")
+      .replace("Signed upload URL created.", "Secure upload link ready.")
+      .replace("Uploading file to Supabase Storage.", "Uploading file.")
+      .replace("File uploaded to Supabase Storage.", "File uploaded.")
+      .replace("Calling Render backend to extract text and generate topic.", "Reading the file and asking AI to make revision content.");
+
+    setProgressSteps((current) => [
       ...current,
       {
         code,
-        message,
+        message: friendlyMessage,
         status: statusValue,
         at: new Date().toISOString()
       }
@@ -95,13 +113,40 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
     return payload;
   }
 
+  function handleFileChange(event) {
+    const selectedFile = event.target.files?.[0] || null;
+    setFile(selectedFile);
+    setError(null);
+    setProgressText("");
+    setProgressSteps([]);
+
+    if (selectedFile && selectedFile.size > MAX_UPLOAD_BYTES) {
+      setError({
+        code: "AI-004_FILE_TOO_LARGE",
+        message: `This file is ${(selectedFile.size / 1024 / 1024).toFixed(1)} MB. The current recommended maximum is ${MAX_UPLOAD_MB} MB. Split very large PowerPoints into smaller lecture files.`,
+        stage: "validate"
+      });
+    }
+  }
+
   async function handleGenerate() {
-    resetDebug();
+    resetProgress();
 
     if (!file) {
       const formatted = {
         code: "AI-001_NO_FILE",
         message: "Choose a lecture file first.",
+        stage: "validate"
+      };
+      setError(formatted);
+      addStep(formatted.code, formatted.message, "error");
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      const formatted = {
+        code: "AI-004_FILE_TOO_LARGE",
+        message: `This file is ${(file.size / 1024 / 1024).toFixed(1)} MB. The current recommended maximum is ${MAX_UPLOAD_MB} MB. Split very large PowerPoints into smaller lecture files.`,
         stage: "validate"
       };
       setError(formatted);
@@ -138,7 +183,6 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
 
       addStep("AI-010_START", `Starting import for ${file.name}.`);
 
-      addStep("AI-020_SIGNED_UPLOAD", "Requesting signed upload URL from Render backend.");
       const uploaded = await uploadLectureFile({
         file,
         userId,
@@ -147,12 +191,12 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
         onDebugStep: addStep
       });
 
-      addStep("AI-030_UPLOAD_DONE", `Uploaded file to Supabase Storage path: ${uploaded.filePath}.`);
+      addStep("AI-030_UPLOAD_DONE", "Upload complete.");
 
       setStatus("generating");
       setProgressText("Extracting text and generating revision topic...");
 
-      addStep("AI-040_GENERATE_REQUEST", "Calling Render backend to extract text and generate topic.");
+      addStep("AI-040_GENERATE_REQUEST", "Reading the file and asking AI to make revision content.");
 
       const payload = await fetchJsonWithDebug(
         `${getApiBaseUrl()}/api/ai/generate-topic-from-upload`,
@@ -167,7 +211,14 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
             fileName: uploaded.fileName,
             mimeType: uploaded.mimeType,
             subjectId,
-            topicName: topicName || file.name.replace(/\.[^.]+$/, "")
+            topicName: topicName || file.name.replace(/\.[^.]+$/, ""),
+            contentSettings: {
+              detailLevel,
+              flashcardTarget: Number(flashcardTarget),
+              quizQuestionTarget: Number(quizQuestionTarget),
+              noteTarget: Number(noteTarget),
+              glossaryTarget: Number(glossaryTarget)
+            }
           })
         },
         "AI-040"
@@ -179,7 +230,7 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
 
       setStatus("complete");
       setProgressText("Topic generated.");
-      addStep("AI-060_COMPLETE", "Topic generated and returned to the website.");
+      addStep("AI-060_COMPLETE", "Topic generated and added to this subject.");
 
       if (onTopicGenerated) {
         onTopicGenerated(payload.topic);
@@ -206,6 +257,9 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
             Upload a PDF, DOCX, PowerPoint or TXT file and generate notes,
             flashcards, glossary terms and quiz questions.
           </p>
+          <p className="muted small mb-0">
+            Recommended maximum file size: {MAX_UPLOAD_MB} MB. For very large PowerPoints, split the file by lecture or week first.
+          </p>
         </div>
       </div>
 
@@ -223,15 +277,78 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
           <input
             type="file"
             accept=".pdf,.docx,.pptx,.txt"
-            onChange={(event) => setFile(event.target.files?.[0] || null)}
+            onChange={handleFileChange}
           />
           <span className="file-drop-title">
             {file ? file.name : "Choose lecture file"}
           </span>
           <span className="muted">
-            Larger files upload to Supabase Storage before AI processing.
+            Secure upload → text extraction → AI-generated topic.
           </span>
         </label>
+      </div>
+
+      <div className="ai-options-card">
+        <div className="ai-options-header">
+          <h3>AI output settings</h3>
+          <p className="muted mb-0">Choose how much content the AI should make. These are rough targets, not strict promises.</p>
+        </div>
+
+        <div className="ai-options-grid">
+          <label className="field-block">
+            <span>Detail level</span>
+            <select value={detailLevel} onChange={(event) => setDetailLevel(event.target.value)}>
+              <option value="simple">Simple</option>
+              <option value="balanced">Balanced</option>
+              <option value="detailed">Detailed</option>
+              <option value="exam-cram">Exam cram</option>
+            </select>
+          </label>
+
+          <label className="field-block">
+            <span>Flashcards</span>
+            <input
+              type="number"
+              min="4"
+              max="60"
+              value={flashcardTarget}
+              onChange={(event) => setFlashcardTarget(event.target.value)}
+            />
+          </label>
+
+          <label className="field-block">
+            <span>Practice questions</span>
+            <input
+              type="number"
+              min="0"
+              max="40"
+              value={quizQuestionTarget}
+              onChange={(event) => setQuizQuestionTarget(event.target.value)}
+            />
+          </label>
+
+          <label className="field-block">
+            <span>Notes sections</span>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={noteTarget}
+              onChange={(event) => setNoteTarget(event.target.value)}
+            />
+          </label>
+
+          <label className="field-block">
+            <span>Glossary terms</span>
+            <input
+              type="number"
+              min="0"
+              max="30"
+              value={glossaryTarget}
+              onChange={(event) => setGlossaryTarget(event.target.value)}
+            />
+          </label>
+        </div>
       </div>
 
       {status === "uploading" && (
@@ -252,13 +369,13 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
         </div>
       )}
 
-      <DebugStepList steps={debugSteps} />
+      <ProgressStepList steps={progressSteps} status={status} />
 
       <div className="button-row">
         <button
           type="button"
           className="revision-btn revision-btn-primary"
-          disabled={isBusy}
+          disabled={isBusy || Boolean(file && file.size > MAX_UPLOAD_BYTES)}
           onClick={handleGenerate}
         >
           {isBusy ? "Working..." : "Generate Topic"}

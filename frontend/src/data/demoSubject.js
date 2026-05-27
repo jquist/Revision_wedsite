@@ -1,151 +1,323 @@
 export const demoSubject = {
-  subjectId: "demo-computer-science",
-  subjectName: "Demo Subject: Computer Science",
+  subjectId: "demo-simple-maths",
+  subjectName: "Demo Subject: Simple Maths",
   description:
-    "A read-only example subject showing how flashcards, practice tests, notes, and glossary terms look after revision content has been added.",
+    "A read-only example subject showing how topics, flashcards, practice tests, notes, and glossary terms work in a realistic revision set.",
   createdAt: "2026-05-16",
-  updatedAt: "2026-05-16",
+  updatedAt: "2026-05-27",
   topics: [
     {
-      topicId: "network-security-basics",
-      topicName: "Network Security Basics",
-      sourceFiles: ["Demo lecture notes"],
+      topicId: "fractions-basics",
+      topicName: "Fractions Basics",
+      sourceFiles: ["Demo worksheet"],
       summary:
-        "A small demo topic covering firewalls, encryption, phishing, and safe network behaviour.",
+        "A beginner-friendly topic covering numerator, denominator, equivalent fractions, simplifying, and adding simple fractions.",
       notes: [
         {
-          noteId: "note-firewalls",
-          heading: "Firewalls",
+          noteId: "note-fraction-parts",
+          heading: "Parts of a fraction",
           content:
-            "A firewall filters network traffic using rules. It can block suspicious connections, allow trusted services, and reduce the chance of unwanted access.",
+            "The numerator is the top number and tells you how many parts you have. The denominator is the bottom number and tells you how many equal parts the whole has been split into.",
         },
         {
-          noteId: "note-encryption",
-          heading: "Encryption",
+          noteId: "note-equivalent-fractions",
+          heading: "Equivalent fractions",
           content:
-            "Encryption protects data by turning readable information into unreadable ciphertext. A key is needed to turn it back into readable information.",
+            "Equivalent fractions look different but have the same value. For example, 1/2, 2/4, and 4/8 are all equivalent because they describe the same amount.",
         },
         {
-          noteId: "note-phishing",
-          heading: "Phishing",
+          noteId: "note-adding-fractions",
+          heading: "Adding fractions",
           content:
-            "Phishing attacks try to trick people into sharing sensitive information. Warning signs include urgent wording, unexpected links, spelling mistakes, and requests for passwords or payment details.",
+            "To add fractions with the same denominator, add the numerators and keep the denominator the same. For example, 1/5 + 2/5 = 3/5.",
         },
       ],
       flashcards: [
         {
-          flashcardId: "demo-fc-firewall",
-          question: "What is the main purpose of a firewall?",
-          answer:
-            "To monitor and filter network traffic using security rules, helping block unwanted or suspicious connections.",
+          flashcardId: "demo-fc-numerator",
+          question: "What is the numerator in a fraction?",
+          answer: "The numerator is the top number. It shows how many parts are being counted.",
           difficulty: "easy",
-          tags: ["networking", "security"],
+          tags: ["fractions"],
           score: 0,
           correctCount: 0,
           incorrectCount: 0,
           lastReviewed: null,
         },
         {
-          flashcardId: "demo-fc-encryption",
-          question: "Why is encryption useful when sending data online?",
-          answer:
-            "It helps keep the data private by making it unreadable to people who do not have the correct key.",
+          flashcardId: "demo-fc-denominator",
+          question: "What is the denominator in a fraction?",
+          answer: "The denominator is the bottom number. It shows how many equal parts the whole is split into.",
           difficulty: "easy",
-          tags: ["encryption"],
+          tags: ["fractions"],
           score: 1,
           correctCount: 1,
           incorrectCount: 0,
           lastReviewed: null,
         },
         {
-          flashcardId: "demo-fc-phishing",
-          question: "Name two warning signs of a phishing email.",
-          answer:
-            "Urgent pressure, suspicious links, spelling mistakes, unexpected attachments, or requests for passwords/payment details.",
+          flashcardId: "demo-fc-equivalent",
+          question: "Give an equivalent fraction for 1/2.",
+          answer: "2/4, 3/6, 4/8, and many others are equivalent to 1/2.",
+          difficulty: "easy",
+          tags: ["equivalent fractions"],
+          score: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          lastReviewed: null,
+        },
+        {
+          flashcardId: "demo-fc-add-same-denom",
+          question: "What is 2/7 + 3/7?",
+          answer: "5/7, because the denominators are the same so you add the numerators.",
           difficulty: "medium",
-          tags: ["phishing"],
+          tags: ["adding fractions"],
           score: -1,
           correctCount: 0,
           incorrectCount: 1,
           lastReviewed: null,
         },
+      ],
+      quizQuestions: [
         {
-          flashcardId: "demo-fc-mfa",
-          question: "What does multi-factor authentication add to a login?",
-          answer:
-            "It adds an extra proof of identity, such as a code, app approval, or security key, alongside the password.",
+          questionId: "demo-q-numerator",
+          question: "In the fraction 3/8, which number is the numerator?",
+          options: [
+            { text: "3", isCorrect: true },
+            { text: "8" },
+            { text: "11" },
+            { text: "5" },
+          ],
+          explanation: "The numerator is the top number, so in 3/8 the numerator is 3.",
+          difficulty: "easy",
+          tags: ["fractions"],
+        },
+        {
+          questionId: "demo-q-equivalent",
+          question: "Which fraction is equivalent to 1/3?",
+          options: [
+            { text: "2/6", isCorrect: true },
+            { text: "2/3" },
+            { text: "3/1" },
+            { text: "1/6" },
+          ],
+          explanation: "1/3 can be multiplied by 2/2 to make 2/6.",
           difficulty: "medium",
-          tags: ["authentication"],
+          tags: ["equivalent fractions"],
+        },
+      ],
+      glossary: [
+        {
+          term: "Numerator",
+          definition: "The top number in a fraction.",
+        },
+        {
+          term: "Denominator",
+          definition: "The bottom number in a fraction.",
+        },
+        {
+          term: "Equivalent fraction",
+          definition: "A fraction with the same value as another fraction.",
+        },
+      ],
+    },
+    {
+      topicId: "algebra-basics",
+      topicName: "Algebra Basics",
+      sourceFiles: ["Demo worksheet"],
+      summary:
+        "A simple topic showing how letters can represent unknown values and how equations can be solved step by step.",
+      notes: [
+        {
+          noteId: "note-variable",
+          heading: "Variables",
+          content:
+            "A variable is a letter or symbol that stands for a number. In x + 3 = 7, x is the unknown value.",
+        },
+        {
+          noteId: "note-balancing",
+          heading: "Balancing equations",
+          content:
+            "Whatever you do to one side of an equation, you must do to the other side. This keeps both sides equal.",
+        },
+        {
+          noteId: "note-solving",
+          heading: "Solving simple equations",
+          content:
+            "To solve x + 5 = 12, subtract 5 from both sides. That gives x = 7.",
+        },
+      ],
+      flashcards: [
+        {
+          flashcardId: "demo-fc-variable",
+          question: "What is a variable?",
+          answer: "A variable is a letter or symbol that represents an unknown or changing number.",
+          difficulty: "easy",
+          tags: ["algebra"],
           score: 0,
           correctCount: 0,
+          incorrectCount: 0,
+          lastReviewed: null,
+        },
+        {
+          flashcardId: "demo-fc-balance",
+          question: "Why do we do the same operation to both sides of an equation?",
+          answer: "To keep the equation balanced so both sides remain equal.",
+          difficulty: "medium",
+          tags: ["equations"],
+          score: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          lastReviewed: null,
+        },
+        {
+          flashcardId: "demo-fc-solve-x",
+          question: "Solve x + 4 = 10.",
+          answer: "x = 6, because subtracting 4 from both sides gives x = 6.",
+          difficulty: "medium",
+          tags: ["solving equations"],
+          score: 2,
+          correctCount: 2,
           incorrectCount: 0,
           lastReviewed: null,
         },
       ],
       quizQuestions: [
         {
-          questionId: "demo-q-firewall",
-          question: "Which statement best describes a firewall?",
+          questionId: "demo-q-variable",
+          question: "In the equation x + 2 = 9, what is x?",
           options: [
-            { text: "A tool that filters network traffic using rules", isCorrect: true },
-            { text: "A type of password manager" },
-            { text: "A file format for encrypted images" },
-            { text: "A website used to download software updates" },
+            { text: "7", isCorrect: true },
+            { text: "9" },
+            { text: "11" },
+            { text: "2" },
           ],
-          explanation:
-            "A firewall is used to control traffic entering or leaving a device or network.",
+          explanation: "Subtract 2 from both sides: x = 7.",
           difficulty: "easy",
-          tags: ["firewall"],
+          tags: ["algebra"],
         },
         {
-          questionId: "demo-q-phishing",
-          question: "Which action is safest if an unexpected email asks you to reset your password using a link?",
+          questionId: "demo-q-balance",
+          question: "What should you do to keep an equation balanced?",
           options: [
-            { text: "Click the link quickly before the account is closed" },
-            { text: "Reply with your password so support can check it" },
-            { text: "Open the official website yourself and check the account from there", isCorrect: true },
-            { text: "Forward the email to friends to ask if it is real" },
+            { text: "Do the same operation to both sides", isCorrect: true },
+            { text: "Only change the left side" },
+            { text: "Always multiply by 10" },
+            { text: "Remove the equals sign" },
           ],
-          explanation:
-            "Going through the official website avoids trusting a potentially fake link.",
+          explanation: "Equations stay equal only if both sides are changed in the same way.",
           difficulty: "medium",
-          tags: ["phishing"],
-        },
-        {
-          questionId: "demo-q-mfa",
-          question: "Why does multi-factor authentication improve security?",
-          options: [
-            { text: "It removes the need to remember anything" },
-            { text: "It means an attacker usually needs more than just the password", isCorrect: true },
-            { text: "It makes every website load faster" },
-            { text: "It stops all spam emails from arriving" },
-          ],
-          explanation:
-            "MFA adds another check, so a stolen password alone may not be enough.",
-          difficulty: "medium",
-          tags: ["authentication"],
+          tags: ["equations"],
         },
       ],
       glossary: [
         {
-          term: "Firewall",
-          definition:
-            "A security system that controls allowed and blocked network traffic based on rules.",
+          term: "Variable",
+          definition: "A symbol, often a letter, that represents a number.",
         },
         {
-          term: "Encryption",
-          definition:
-            "A method of scrambling data so only someone with the right key can read it.",
+          term: "Equation",
+          definition: "A mathematical statement showing that two expressions are equal.",
+        },
+      ],
+    },
+    {
+      topicId: "percentages",
+      topicName: "Percentages",
+      sourceFiles: ["Demo worksheet"],
+      summary:
+        "A topic covering what percentages mean, how to find 10%, and how to convert between fractions, decimals, and percentages.",
+      notes: [
+        {
+          noteId: "note-percent-meaning",
+          heading: "Meaning of percentage",
+          content:
+            "Percent means out of 100. So 25% means 25 out of 100.",
         },
         {
-          term: "Phishing",
-          definition:
-            "A social engineering attack that tricks people into revealing information or clicking unsafe links.",
+          noteId: "note-finding-ten-percent",
+          heading: "Finding 10%",
+          content:
+            "To find 10% of a number, divide the number by 10. For example, 10% of 80 is 8.",
         },
         {
-          term: "Multi-factor authentication",
-          definition:
-            "A login method that uses more than one proof of identity, such as a password plus a one-time code.",
+          noteId: "note-percent-decimal",
+          heading: "Percentage to decimal",
+          content:
+            "To change a percentage to a decimal, divide by 100. For example, 45% becomes 0.45.",
+        },
+      ],
+      flashcards: [
+        {
+          flashcardId: "demo-fc-percent-meaning",
+          question: "What does percent mean?",
+          answer: "Percent means out of 100.",
+          difficulty: "easy",
+          tags: ["percentages"],
+          score: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          lastReviewed: null,
+        },
+        {
+          flashcardId: "demo-fc-ten-percent",
+          question: "How do you find 10% of a number?",
+          answer: "Divide the number by 10.",
+          difficulty: "easy",
+          tags: ["percentages"],
+          score: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          lastReviewed: null,
+        },
+        {
+          flashcardId: "demo-fc-25-percent",
+          question: "What is 25% of 60?",
+          answer: "15, because 25% is one quarter and one quarter of 60 is 15.",
+          difficulty: "medium",
+          tags: ["percentages"],
+          score: -2,
+          correctCount: 0,
+          incorrectCount: 2,
+          lastReviewed: null,
+        },
+      ],
+      quizQuestions: [
+        {
+          questionId: "demo-q-ten-percent",
+          question: "What is 10% of 90?",
+          options: [
+            { text: "9", isCorrect: true },
+            { text: "90" },
+            { text: "0.9" },
+            { text: "19" },
+          ],
+          explanation: "10% means divide by 10, so 90 ÷ 10 = 9.",
+          difficulty: "easy",
+          tags: ["percentages"],
+        },
+        {
+          questionId: "demo-q-decimal",
+          question: "What is 50% as a decimal?",
+          options: [
+            { text: "0.5", isCorrect: true },
+            { text: "5" },
+            { text: "50" },
+            { text: "0.05" },
+          ],
+          explanation: "Divide 50 by 100 to get 0.5.",
+          difficulty: "easy",
+          tags: ["conversion"],
+        },
+      ],
+      glossary: [
+        {
+          term: "Percentage",
+          definition: "A way of writing a number as parts out of 100.",
+        },
+        {
+          term: "Decimal",
+          definition: "A number written using a decimal point.",
         },
       ],
     },

@@ -18,12 +18,6 @@ Do not use trailing commas.
 Do not use comments.
 Make the content exam-focused and useful.
 
-Limits per chunk:
-- max 10 flashcards
-- max 6 multiple choice questions
-- max 8 glossary terms
-- max 6 notes
-
 Return this exact structure:
 {
   "topicId": "",
@@ -69,6 +63,78 @@ Return this exact structure:
   "sourceFiles": []
 }
 `;
+
+const DETAIL_LEVELS = {
+  simple: "Simple: use plain language, short answers, beginner-friendly explanations, and avoid unnecessary jargon.",
+  balanced: "Balanced: use clear student-friendly wording with enough detail for revision.",
+  detailed: "Detailed: include fuller explanations, examples, and key distinctions. Still keep each item focused.",
+  "exam-cram": "Exam cram: prioritise definitions, distinctions, likely MCQ traps, and compact high-yield facts."
+};
+
+function clampNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(number)));
+}
+
+function normaliseContentSettings(settings = {}) {
+  const detailLevel = DETAIL_LEVELS[settings.detailLevel] ? settings.detailLevel : "balanced";
+
+  return {
+    detailLevel,
+    detailInstruction: DETAIL_LEVELS[detailLevel],
+    flashcardTarget: clampNumber(settings.flashcardTarget, 16, 0, 60),
+    quizQuestionTarget: clampNumber(settings.quizQuestionTarget, 8, 0, 40),
+    noteTarget: clampNumber(settings.noteTarget, 6, 1, 20),
+    glossaryTarget: clampNumber(settings.glossaryTarget, 8, 0, 30)
+  };
+}
+
+function getChunkTargets(settings, totalChunks) {
+  const divisor = Math.max(1, Number(totalChunks || 1));
+
+  return {
+    flashcardTarget: Math.max(2, Math.ceil(settings.flashcardTarget / divisor) + 2),
+    quizQuestionTarget: Math.max(0, Math.ceil(settings.quizQuestionTarget / divisor) + 1),
+    noteTarget: Math.max(1, Math.ceil(settings.noteTarget / divisor) + 1),
+    glossaryTarget: Math.max(0, Math.ceil(settings.glossaryTarget / divisor) + 1)
+  };
+}
+
+function buildSettingsPrompt(settings, targets, scopeLabel = "this chunk") {
+  return `
+AI output settings for ${scopeLabel}:
+- Detail level: ${settings.detailLevel}
+- Detail instruction: ${settings.detailInstruction}
+- Flashcards target: roughly ${targets.flashcardTarget}
+- Practice multiple-choice questions target: roughly ${targets.quizQuestionTarget}
+- Notes sections target: roughly ${targets.noteTarget}
+- Glossary terms target: roughly ${targets.glossaryTarget}
+
+Content rules:
+- If the lecture text does not support enough items, create fewer rather than inventing.
+- Flashcards should test useful revision facts.
+- Practice questions must have 4 options where possible and exactly one correct answer.
+- Notes should be structured as heading/content objects.
+- Keep output valid JSON only.
+`;
+}
+
+function limitArray(items, count) {
+  if (!Array.isArray(items)) return [];
+  if (count <= 0) return [];
+  return items.slice(0, count);
+}
+
+function applyContentLimits(topic, settings) {
+  return {
+    ...topic,
+    flashcards: limitArray(topic.flashcards, settings.flashcardTarget),
+    quizQuestions: limitArray(topic.quizQuestions, settings.quizQuestionTarget),
+    notes: limitArray(topic.notes, settings.noteTarget),
+    glossary: limitArray(topic.glossary, settings.glossaryTarget)
+  };
+}
 
 function getProvider() {
   return String(process.env.AI_PROVIDER || "openai").toLowerCase();
@@ -154,10 +220,16 @@ async function generateTopicFromChunk({
   topicName,
   fileName,
   chunkIndex,
-  totalChunks
+  totalChunks,
+  contentSettings
 }) {
+  const settings = normaliseContentSettings(contentSettings);
+  const chunkTargets = getChunkTargets(settings, totalChunks);
+
   const prompt = `
 ${REVISION_TOPIC_SCHEMA_PROMPT}
+
+${buildSettingsPrompt(settings, chunkTargets, "this chunk")}
 
 Topic name requested: ${topicName}
 Source file: ${fileName}
@@ -208,7 +280,9 @@ function uniqueGlossary(glossary) {
   });
 }
 
-async function mergeChunkTopics({ topics, topicName, fileName }) {
+async function mergeChunkTopics({ topics, topicName, fileName, contentSettings }) {
+  const settings = normaliseContentSettings(contentSettings);
+
   const mergedRaw = {
     topicId:
       String(topicName || "ai-topic")
@@ -230,11 +304,13 @@ async function mergeChunkTopics({ topics, topicName, fileName }) {
   };
 
   if (topics.length < 4) {
-    return normaliseGeneratedTopic(mergedRaw, topicName);
+    return applyContentLimits(normaliseGeneratedTopic(mergedRaw, topicName), settings);
   }
 
   const prompt = `
 ${REVISION_TOPIC_SCHEMA_PROMPT}
+
+${buildSettingsPrompt(settings, settings, "the final merged topic")}
 
 Merge this generated draft into one clean revision topic.
 Remove duplicates.
@@ -249,10 +325,10 @@ ${JSON.stringify(mergedRaw)}
 
   try {
     const parsed = extractJsonObject(raw);
-    return {
+    return applyContentLimits({
       ...normaliseGeneratedTopic(parsed, topicName),
       sourceFiles: [fileName]
-    };
+    }, settings);
   } catch (error) {
     throw new Error(`[AI_JSON_020_MERGE_PARSE_FAILED] ${error.message}`);
   }
@@ -262,12 +338,14 @@ async function generateTopicFromText({
   textChunks,
   topicName,
   fileName,
-  onProgress
+  onProgress,
+  contentSettings
 }) {
   if (!textChunks.length) {
     throw new Error("[AI_TEXT_001_NO_CHUNKS] No text could be extracted from the file.");
   }
 
+  const settings = normaliseContentSettings(contentSettings);
   const generatedTopics = [];
 
   for (let index = 0; index < textChunks.length; index += 1) {
@@ -283,7 +361,8 @@ async function generateTopicFromText({
       topicName,
       fileName,
       chunkIndex: index,
-      totalChunks: textChunks.length
+      totalChunks: textChunks.length,
+      contentSettings: settings
     });
 
     generatedTopics.push(chunkTopic);
@@ -299,7 +378,8 @@ async function generateTopicFromText({
   const merged = await mergeChunkTopics({
     topics: generatedTopics,
     topicName,
-    fileName
+    fileName,
+    contentSettings: settings
   });
 
   if (onProgress) {
@@ -309,7 +389,7 @@ async function generateTopicFromText({
     });
   }
 
-  return merged;
+  return applyContentLimits(merged, settings);
 }
 
 module.exports = {
