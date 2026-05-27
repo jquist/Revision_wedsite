@@ -77,16 +77,64 @@ function clampNumber(value, fallback, min, max) {
   return Math.max(min, Math.min(max, Math.round(number)));
 }
 
+function getAutomaticGlossaryTarget(detailLevel) {
+  if (detailLevel === "simple") return 6;
+  if (detailLevel === "detailed") return 16;
+  if (detailLevel === "exam-cram") return 12;
+  return 10;
+}
+
+function getAutoTargets(detailLevel) {
+  if (detailLevel === "simple") {
+    return {
+      flashcardTarget: 12,
+      quizQuestionTarget: 5,
+      noteTarget: 4
+    };
+  }
+
+  if (detailLevel === "detailed") {
+    return {
+      flashcardTarget: 32,
+      quizQuestionTarget: 16,
+      noteTarget: 12
+    };
+  }
+
+  if (detailLevel === "exam-cram") {
+    return {
+      flashcardTarget: 42,
+      quizQuestionTarget: 20,
+      noteTarget: 8
+    };
+  }
+
+  return {
+    flashcardTarget: 20,
+    quizQuestionTarget: 10,
+    noteTarget: 7
+  };
+}
+
 function normaliseContentSettings(settings = {}) {
   const detailLevel = DETAIL_LEVELS[settings.detailLevel] ? settings.detailLevel : "balanced";
+  const autoTargets = settings.autoTargets !== false;
+  const defaults = getAutoTargets(detailLevel);
 
   return {
     detailLevel,
     detailInstruction: DETAIL_LEVELS[detailLevel],
-    flashcardTarget: clampNumber(settings.flashcardTarget, 16, 0, 60),
-    quizQuestionTarget: clampNumber(settings.quizQuestionTarget, 8, 0, 40),
-    noteTarget: clampNumber(settings.noteTarget, 6, 1, 20),
-    glossaryTarget: clampNumber(settings.glossaryTarget, 8, 0, 30)
+    autoTargets,
+    flashcardTarget: autoTargets
+      ? defaults.flashcardTarget
+      : clampNumber(settings.flashcardTarget, defaults.flashcardTarget, 0, 60),
+    quizQuestionTarget: autoTargets
+      ? defaults.quizQuestionTarget
+      : clampNumber(settings.quizQuestionTarget, defaults.quizQuestionTarget, 0, 40),
+    noteTarget: autoTargets
+      ? defaults.noteTarget
+      : clampNumber(settings.noteTarget, defaults.noteTarget, 1, 20),
+    glossaryTarget: getAutomaticGlossaryTarget(detailLevel)
   };
 }
 
@@ -102,20 +150,24 @@ function getChunkTargets(settings, totalChunks) {
 }
 
 function buildSettingsPrompt(settings, targets, scopeLabel = "this chunk") {
+  const quantityInstruction = settings.autoTargets
+    ? `- Quantity mode: AI decides. Choose sensible amounts for ${scopeLabel} based on how much useful revision content is present, while staying under these safety caps: ${targets.flashcardTarget} flashcards, ${targets.quizQuestionTarget} practice questions, ${targets.noteTarget} notes sections.`
+    : `- Quantity mode: manual rough targets. Aim for roughly ${targets.flashcardTarget} flashcards, ${targets.quizQuestionTarget} practice questions, and ${targets.noteTarget} notes sections if the source supports them.`;
+
   return `
 AI output settings for ${scopeLabel}:
 - Detail level: ${settings.detailLevel}
 - Detail instruction: ${settings.detailInstruction}
-- Flashcards target: roughly ${targets.flashcardTarget}
-- Practice multiple-choice questions target: roughly ${targets.quizQuestionTarget}
-- Notes sections target: roughly ${targets.noteTarget}
-- Glossary terms target: roughly ${targets.glossaryTarget}
+${quantityInstruction}
+- Glossary: automatically include important terms that appear in or are clearly supported by the lecture text.
 
 Content rules:
 - If the lecture text does not support enough items, create fewer rather than inventing.
+- Do not create filler just to hit a number.
 - Flashcards should test useful revision facts.
 - Practice questions must have 4 options where possible and exactly one correct answer.
 - Notes should be structured as heading/content objects.
+- Glossary should contain useful terms from the source text, not random extra terms.
 - Keep output valid JSON only.
 `;
 }

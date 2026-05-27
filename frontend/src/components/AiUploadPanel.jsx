@@ -47,10 +47,10 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
   const [file, setFile] = useState(null);
   const [topicName, setTopicName] = useState("");
   const [detailLevel, setDetailLevel] = useState("balanced");
+  const [aiDecidesQuantities, setAiDecidesQuantities] = useState(true);
   const [flashcardTarget, setFlashcardTarget] = useState(16);
   const [quizQuestionTarget, setQuizQuestionTarget] = useState(8);
   const [noteTarget, setNoteTarget] = useState(6);
-  const [glossaryTarget, setGlossaryTarget] = useState(8);
   const [status, setStatus] = useState("idle");
   const [progressText, setProgressText] = useState("");
   const [uploadPercent, setUploadPercent] = useState(0);
@@ -127,6 +127,24 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
         stage: "validate"
       });
     }
+  }
+
+  function buildContentSettings() {
+    const baseSettings = {
+      detailLevel,
+      autoTargets: aiDecidesQuantities
+    };
+
+    if (aiDecidesQuantities) {
+      return baseSettings;
+    }
+
+    return {
+      ...baseSettings,
+      flashcardTarget: Number(flashcardTarget),
+      quizQuestionTarget: Number(quizQuestionTarget),
+      noteTarget: Number(noteTarget)
+    };
   }
 
   async function handleGenerate() {
@@ -212,13 +230,7 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
             mimeType: uploaded.mimeType,
             subjectId,
             topicName: topicName || file.name.replace(/\.[^.]+$/, ""),
-            contentSettings: {
-              detailLevel,
-              flashcardTarget: Number(flashcardTarget),
-              quizQuestionTarget: Number(quizQuestionTarget),
-              noteTarget: Number(noteTarget),
-              glossaryTarget: Number(glossaryTarget)
-            }
+            contentSettings: buildContentSettings()
           })
         },
         "AI-040"
@@ -291,10 +303,12 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
       <div className="ai-options-card">
         <div className="ai-options-header">
           <h3>AI output settings</h3>
-          <p className="muted mb-0">Choose how much content the AI should make. These are rough targets, not strict promises.</p>
+          <p className="muted mb-0">
+            Pick the revision style. Let AI decide the amount, or switch to manual targets.
+          </p>
         </div>
 
-        <div className="ai-options-grid">
+        <div className="ai-options-grid ai-options-grid-compact">
           <label className="field-block">
             <span>Detail level</span>
             <select value={detailLevel} onChange={(event) => setDetailLevel(event.target.value)}>
@@ -305,50 +319,55 @@ export default function AiUploadPanel({ userId, subjectId, onTopicGenerated }) {
             </select>
           </label>
 
-          <label className="field-block">
-            <span>Flashcards</span>
+          <label className="ai-toggle-card">
             <input
-              type="number"
-              min="4"
-              max="60"
-              value={flashcardTarget}
-              onChange={(event) => setFlashcardTarget(event.target.value)}
+              type="checkbox"
+              checked={aiDecidesQuantities}
+              onChange={(event) => setAiDecidesQuantities(event.target.checked)}
             />
-          </label>
-
-          <label className="field-block">
-            <span>Practice questions</span>
-            <input
-              type="number"
-              min="0"
-              max="40"
-              value={quizQuestionTarget}
-              onChange={(event) => setQuizQuestionTarget(event.target.value)}
-            />
-          </label>
-
-          <label className="field-block">
-            <span>Notes sections</span>
-            <input
-              type="number"
-              min="1"
-              max="20"
-              value={noteTarget}
-              onChange={(event) => setNoteTarget(event.target.value)}
-            />
-          </label>
-
-          <label className="field-block">
-            <span>Glossary terms</span>
-            <input
-              type="number"
-              min="0"
-              max="30"
-              value={glossaryTarget}
-              onChange={(event) => setGlossaryTarget(event.target.value)}
-            />
+            <span>
+              <strong>AI decides quantities</strong>
+              <small>Recommended: AI chooses suitable numbers for the file size and detail level.</small>
+            </span>
           </label>
         </div>
+
+        {!aiDecidesQuantities && (
+          <div className="ai-options-grid manual-target-grid">
+            <label className="field-block">
+              <span>Flashcards</span>
+              <input
+                type="number"
+                min="4"
+                max="60"
+                value={flashcardTarget}
+                onChange={(event) => setFlashcardTarget(event.target.value)}
+              />
+            </label>
+
+            <label className="field-block">
+              <span>Practice questions</span>
+              <input
+                type="number"
+                min="0"
+                max="40"
+                value={quizQuestionTarget}
+                onChange={(event) => setQuizQuestionTarget(event.target.value)}
+              />
+            </label>
+
+            <label className="field-block">
+              <span>Notes sections</span>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={noteTarget}
+                onChange={(event) => setNoteTarget(event.target.value)}
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       {status === "uploading" && (

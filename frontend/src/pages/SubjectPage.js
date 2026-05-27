@@ -112,6 +112,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
     return getSafeTab(savedState.activeTab || "flashcards");
   });
   const [showNewTopicForm, setShowNewTopicForm] = useState(false);
+  const [showAiImport, setShowAiImport] = useState(false);
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicSummary, setNewTopicSummary] = useState("");
   const [editingTopic, setEditingTopic] = useState(null);
@@ -270,12 +271,31 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
           </div>
 
           {!readOnly && currentUserId && (
-            <div className="mt-4">
-              <AiUploadPanel
-                userId={currentUserId}
-                subjectId={subject.subjectId}
-                onTopicGenerated={handleTopicGenerated}
-              />
+            <div className="mt-4 ai-import-collapse-wrap">
+              <button
+                className="ai-import-toggle-card"
+                type="button"
+                aria-expanded={showAiImport}
+                onClick={() => setShowAiImport((isOpen) => !isOpen)}
+              >
+                <span>
+                  <strong>AI Import</strong>
+                  <small>Generate a new topic from a lecture file</small>
+                </span>
+                <span className={`ai-import-arrow ${showAiImport ? "open" : ""}`} aria-hidden="true">
+                  ▾
+                </span>
+              </button>
+
+              {showAiImport && (
+                <div className="ai-import-collapse-panel">
+                  <AiUploadPanel
+                    userId={currentUserId}
+                    subjectId={subject.subjectId}
+                    onTopicGenerated={handleTopicGenerated}
+                  />
+                </div>
+              )}
             </div>
           )}
         </section>
