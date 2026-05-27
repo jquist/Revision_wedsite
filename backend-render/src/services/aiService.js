@@ -284,7 +284,7 @@ ${REVISION_TOPIC_SCHEMA_PROMPT}
 ${buildSettingsPrompt(settings, chunkTargets, "this chunk")}
 
 Topic name requested: ${topicName}
-Source file: ${fileName}
+Source file(s): ${fileName}
 Chunk: ${chunkIndex + 1} of ${totalChunks}
 
 Lecture text:
@@ -332,8 +332,25 @@ function uniqueGlossary(glossary) {
   });
 }
 
-async function mergeChunkTopics({ topics, topicName, fileName, contentSettings }) {
+function normaliseSourceFiles(sourceFiles, fallbackFileName) {
+  if (Array.isArray(sourceFiles) && sourceFiles.length) {
+    return sourceFiles.map((file) => {
+      if (typeof file === "string") return file;
+
+      return {
+        name: file?.name || file?.fileName || "Uploaded file",
+        type: file?.type || file?.mimeType || "",
+        size: file?.size || file?.sizeBytes || 0
+      };
+    });
+  }
+
+  return fallbackFileName ? [fallbackFileName] : [];
+}
+
+async function mergeChunkTopics({ topics, topicName, fileName, sourceFiles, contentSettings }) {
   const settings = normaliseContentSettings(contentSettings);
+  const safeSourceFiles = normaliseSourceFiles(sourceFiles, fileName);
 
   const mergedRaw = {
     topicId:
@@ -352,7 +369,7 @@ async function mergeChunkTopics({ topics, topicName, fileName, contentSettings }
       topics.flatMap((topic) => topic.quizQuestions || [])
     ),
     glossary: uniqueGlossary(topics.flatMap((topic) => topic.glossary || [])),
-    sourceFiles: [fileName]
+    sourceFiles: safeSourceFiles
   };
 
   if (topics.length < 4) {
@@ -379,7 +396,7 @@ ${JSON.stringify(mergedRaw)}
     const parsed = extractJsonObject(raw);
     return applyContentLimits({
       ...normaliseGeneratedTopic(parsed, topicName),
-      sourceFiles: [fileName]
+      sourceFiles: safeSourceFiles
     }, settings);
   } catch (error) {
     throw new Error(`[AI_JSON_020_MERGE_PARSE_FAILED] ${error.message}`);
@@ -390,6 +407,7 @@ async function generateTopicFromText({
   textChunks,
   topicName,
   fileName,
+  sourceFiles,
   onProgress,
   contentSettings
 }) {
@@ -431,6 +449,7 @@ async function generateTopicFromText({
     topics: generatedTopics,
     topicName,
     fileName,
+    sourceFiles,
     contentSettings: settings
   });
 

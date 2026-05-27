@@ -134,7 +134,57 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
     };
   }
 
-  function handleTopicGenerated(generatedTopic) {
+  function mergeGeneratedContentIntoTopic(existingTopic, generatedTopic) {
+    const safeGeneratedTopic = normaliseTopic(generatedTopic);
+
+    return {
+      ...existingTopic,
+      summary: safeGeneratedTopic.summary || existingTopic.summary || "",
+      notes: [
+        ...(existingTopic.notes || []),
+        ...(safeGeneratedTopic.notes || []),
+      ],
+      flashcards: [
+        ...(existingTopic.flashcards || []),
+        ...(safeGeneratedTopic.flashcards || []),
+      ],
+      quizQuestions: [
+        ...(existingTopic.quizQuestions || []),
+        ...(safeGeneratedTopic.quizQuestions || []),
+      ],
+      glossary: [
+        ...(existingTopic.glossary || []),
+        ...(safeGeneratedTopic.glossary || []),
+      ],
+      sourceFiles: [
+        ...(existingTopic.sourceFiles || []),
+        ...(safeGeneratedTopic.sourceFiles || []),
+      ],
+    };
+  }
+
+  function handleTopicGenerated(generatedTopic, options = {}) {
+    if (options.destinationMode === "existing" && options.existingTopicId) {
+      const updatedSubject = {
+        ...subject,
+        updatedAt: new Date().toISOString().slice(0, 10),
+        topics: (subject.topics || []).map((topic) =>
+          topic.topicId === options.existingTopicId
+            ? mergeGeneratedContentIntoTopic(topic, generatedTopic)
+            : topic
+        ),
+      };
+
+      onUpdateSubject(updatedSubject);
+      setSelectedTopicId(options.existingTopicId);
+      setActiveTab("flashcards");
+      writeSubjectPageState(subject.subjectId, {
+        selectedTopicId: options.existingTopicId,
+        activeTab: "flashcards",
+      });
+      return;
+    }
+
     const newTopic = makeUniqueTopic(generatedTopic);
     const updatedSubject = addTopic(subject, newTopic);
 
@@ -280,7 +330,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
               >
                 <span>
                   <strong>AI Import</strong>
-                  <small>Generate a new topic from a lecture file</small>
+                  <small>Generate or extend a topic from lecture file(s)</small>
                 </span>
                 <span className={`ai-import-arrow ${showAiImport ? "open" : ""}`} aria-hidden="true">
                   ▾
@@ -292,6 +342,8 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
                   <AiUploadPanel
                     userId={currentUserId}
                     subjectId={subject.subjectId}
+                    topics={subject.topics || []}
+                    selectedTopicId={selectedTopicId}
                     onTopicGenerated={handleTopicGenerated}
                   />
                 </div>
