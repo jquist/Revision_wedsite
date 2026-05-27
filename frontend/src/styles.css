@@ -415,3 +415,109 @@ body {
     gap: 1rem;
   }
 }
+
+/* Common header/account/footer refinements */
+.app-brand {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-brand strong,
+.app-brand small {
+  display: block;
+  line-height: 1.15;
+}
+
+.app-brand small {
+  margin-top: 0.15rem;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.top-account-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(9rem, 0.75fr) minmax(14rem, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.footer-small,
+.footer-contact span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.footer-links,
+.footer-contact {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.footer-links strong,
+.footer-contact strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.footer-contact a {
+  color: #146c43;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.footer-contact a:hover {
+  text-decoration: underline;
+}
+
+.contact-email-card {
+  padding: 1.1rem;
+  border: 1px solid rgba(25, 135, 84, 0.18);
+  border-radius: 1.1rem;
+  background: rgba(25, 135, 84, 0.08);
+}
+
+.contact-email-card a {
+  display: block;
+  color: #146c43;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.contact-email-card a:hover {
+  text-decoration: underline;
+}
+
+.contact-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 767.98px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .top-account-nav {
+    width: 100%;
+  }
+
+  .top-account-nav .btn {
+    flex: 1 1 auto;
+  }
+}

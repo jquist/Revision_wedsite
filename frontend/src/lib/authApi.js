@@ -2,6 +2,16 @@ import { supabase } from "../utils/supabaseClient";
 import { AUTH_REDIRECTS } from "./authRedirects";
 import { getPasswordError } from "../utils/passwordStrength";
 
+function normaliseAuthError(error) {
+  const message = String(error?.message || "");
+
+  if (message.toLowerCase().includes("rate limit")) {
+    return new Error("Too many emails have been sent recently. Please wait a while before trying again.");
+  }
+
+  return error;
+}
+
 export async function signUpWithSecurePassword({ email, password }) {
   const passwordError = getPasswordError(password, email);
 
@@ -47,7 +57,7 @@ export async function requestPasswordReset(email) {
   });
 
   if (error) {
-    throw error;
+    throw normaliseAuthError(error);
   }
 
   return data;

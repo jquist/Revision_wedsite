@@ -33,9 +33,9 @@ export default function SettingsPage({ currentUser, onLogout }) {
           <section className="revision-glass-card settings-hero-card">
             <div>
               <p className="eyebrow">Settings</p>
-              <h1>Account & settings</h1>
+              <h1>Account settings</h1>
               <p className="muted mb-0">
-                Manage your account details and security from one safe place.
+                Manage your account details, password reset, and sign-out options from one safe place.
               </p>
             </div>
             <div className="button-row">

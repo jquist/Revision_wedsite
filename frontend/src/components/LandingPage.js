@@ -17,9 +17,9 @@ function LandingPage({ onStartAuth, onViewDemo }) {
               <span className="fw-bold">ForgeNotes</span>
             </div>
             <div className="d-flex flex-wrap align-items-center gap-2">
-              <a className="btn btn-light rounded-pill px-3 shadow-sm" href="/contact">
-                Contact
-              </a>
+              <button className="btn btn-light rounded-pill px-3 shadow-sm" onClick={onViewDemo}>
+                View demo
+              </button>
               <button className="btn btn-outline-success rounded-pill px-4" onClick={onStartAuth}>
                 Log in
               </button>

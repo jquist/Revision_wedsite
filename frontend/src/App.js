@@ -435,9 +435,6 @@ function App() {
                 <button className="btn btn-outline-secondary" onClick={showLandingPage}>
                   Home
                 </button>
-                <a className="btn btn-outline-secondary" href="/contact">
-                  Contact
-                </a>
                 <button className="btn btn-outline-primary" onClick={resetDemoSubject}>
                   Reset demo
                 </button>
@@ -480,22 +477,22 @@ function App() {
   return (
     <>
       <header className="app-header border-bottom">
-        <div className="container d-flex justify-content-between align-items-center py-3">
-          <div>
-            <h1 className="h3 mb-0">ForgeNotes</h1>
-            <p className="text-muted mb-0">Flashcards, tests, notes, and glossary.</p>
-          </div>
-          <div className="d-flex flex-wrap gap-2">
-            <a className="btn btn-outline-secondary" href="/contact">
-              Contact
-            </a>
+        <div className="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
+          <a className="app-brand d-flex align-items-center gap-2" href="/" aria-label="ForgeNotes home">
+            <span className="brand-icon brand-icon-small">FN</span>
+            <span>
+              <strong>ForgeNotes</strong>
+              <small>Flashcards, tests, notes, and glossary.</small>
+            </span>
+          </a>
+          <nav className="top-account-nav" aria-label="Account navigation">
             <a className="btn btn-outline-primary" href="/settings">
-              Settings
+              Account settings
             </a>
             <button className="btn btn-outline-secondary" onClick={handleLogout}>
               Log out
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
