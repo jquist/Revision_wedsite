@@ -413,7 +413,7 @@ function App() {
           <header className="app-header border-bottom">
             <div className="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
               <div>
-                <h1 className="h3 mb-0">Revision App Demo</h1>
+                <h1 className="h3 mb-0">ForgeNotes Demo</h1>
                 <p className="text-muted mb-0">Preview the app without logging in.</p>
               </div>
               <div className="d-flex flex-wrap gap-2">
@@ -463,7 +463,7 @@ function App() {
       <header className="app-header border-bottom">
         <div className="container d-flex justify-content-between align-items-center py-3">
           <div>
-            <h1 className="h3 mb-0">Revision App</h1>
+            <h1 className="h3 mb-0">ForgeNotes</h1>
             <p className="text-muted mb-0">Flashcards, tests, notes, and glossary.</p>
           </div>
           <button className="btn btn-outline-secondary" onClick={handleLogout}>

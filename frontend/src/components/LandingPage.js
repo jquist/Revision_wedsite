@@ -12,7 +12,7 @@ function LandingPage({ onStartAuth, onViewDemo }) {
           <nav className="landing-nav d-flex justify-content-between align-items-center mb-5">
             <div className="brand-mark d-flex align-items-center gap-2">
               <span className="brand-icon">R</span>
-              <span className="fw-bold">Revision App</span>
+              <span className="fw-bold">ForgeNotes</span>
             </div>
             <button className="btn btn-outline-success rounded-pill px-4" onClick={onStartAuth}>
               Log in
@@ -26,7 +26,7 @@ function LandingPage({ onStartAuth, onViewDemo }) {
                 Turn revision into flashcards, tests, notes, and glossary terms.
               </h1>
               <p className="lead text-muted mb-4">
-                Keep each subject organised by topic, practise with score-based flashcards, and check your understanding with shuffled multiple-choice tests.
+                Keep each subject organised by topic, practice with score-based flashcards, and check your understanding with shuffled multiple-choice tests.
               </p>
               <div className="d-flex flex-wrap gap-3 mb-4">
                 <button className="btn btn-success btn-lg rounded-pill px-4" onClick={onStartAuth}>
@@ -97,7 +97,7 @@ function LandingPage({ onStartAuth, onViewDemo }) {
       <section className="container py-5">
         <div className="text-center mb-4">
           <h2 className="fw-bold">What the website does</h2>
-          <p className="text-muted mb-0">A simple place for students to store revision content and practise it actively.</p>
+          <p className="text-muted mb-0">A simple place for students to store revision content and practice it actively.</p>
         </div>
         <div className="row g-4">
           <div className="col-md-4">
@@ -110,7 +110,7 @@ function LandingPage({ onStartAuth, onViewDemo }) {
           <div className="col-md-4">
             <div className="feature-card h-100">
               <div className="feature-icon">02</div>
-              <h3 className="h5">Practise actively</h3>
+              <h3 className="h5">Practice actively</h3>
               <p className="text-muted mb-0">Use flashcards and multiple-choice tests instead of only rereading notes.</p>
             </div>
           </div>

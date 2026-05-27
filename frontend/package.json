@@ -1,5 +1,5 @@
 {
-  "name": "revision-app-supabase-vercel",
+  "name": "forgenotes",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
@@ -35,5 +35,10 @@
   },
   "devDependencies": {
     "ajv": "^8.20.0"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
   }
 }

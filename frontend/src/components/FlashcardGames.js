@@ -161,7 +161,7 @@ function FlashcardGames({ flashcards, selectedTopicId, onMarkFlashcards, isDemo 
           <div>
             <h3 className="h5 mb-1">Flashcard games</h3>
             <p className="text-muted mb-0">
-              These use the current topic and score filters above, so you can practise only cards like -3 or -2.
+              These use the current topic and score filters above, so you can practice only cards like -3 or -2.
               {isDemo ? " Demo scores reset when you leave." : ""}
             </p>
           </div>

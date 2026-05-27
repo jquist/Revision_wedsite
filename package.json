@@ -2,6 +2,14 @@
   "scripts": {
     "install-all": "cd frontend && npm install",
     "start": "cd frontend && npm start",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm install && npm run build"
+  },
+  "name": "forgenotes",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
   }
 }

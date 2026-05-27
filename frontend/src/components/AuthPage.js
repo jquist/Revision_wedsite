@@ -64,7 +64,7 @@ function AuthPage({ onLogin, onBackToLanding }) {
         <div className="card-body p-4">
           <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
             <div>
-              <h1 className="h3 mb-0">Revision App</h1>
+              <h1 className="h3 mb-0">ForgeNotes</h1>
               <p className="text-muted mb-0">Log in to save your subjects, flashcards, and tests.</p>
             </div>
             {onBackToLanding && (

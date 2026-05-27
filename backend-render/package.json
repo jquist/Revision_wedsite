@@ -1,11 +1,12 @@
 {
-  "name": "revision-ai-backend",
+  "name": "forgenotes-ai-backend",
   "version": "1.0.0",
   "private": true,
   "description": "AI backend for the revision website. Deploy this folder to Render.",
   "main": "server.js",
   "engines": {
-    "node": "22.x"
+    "node": "20.x",
+    "npm": "10.x"
   },
   "scripts": {
     "start": "node server.js",
@@ -23,5 +24,6 @@
     "pdf-parse": "^1.1.1",
     "ws": "^8.18.0",
     "jsonrepair": "^3.12.0"
-  }
+  },
+  "packageManager": "npm@10.9.2"
 }
