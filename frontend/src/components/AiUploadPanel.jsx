@@ -7,6 +7,26 @@ const MAX_TOTAL_UPLOAD_MB = Number(process.env.REACT_APP_MAX_TOTAL_UPLOAD_MB || 
 const MAX_FILES_PER_IMPORT = Number(process.env.REACT_APP_MAX_FILES_PER_IMPORT || 8);
 const MAX_FILE_UPLOAD_BYTES = MAX_FILE_UPLOAD_MB * 1024 * 1024;
 const MAX_TOTAL_UPLOAD_BYTES = MAX_TOTAL_UPLOAD_MB * 1024 * 1024;
+const QUESTION_TYPE_OPTIONS = [
+  { key: "single_choice", title: "Multiple choice", description: "One correct answer." },
+  { key: "multi_select", title: "Select multiple", description: "Two or more correct answers." },
+  { key: "written", title: "Written answer", description: "User types an answer; AI can mark it." },
+  { key: "fill_blank", title: "Fill in the blank", description: "Short typed recall answers." },
+  { key: "matching", title: "Match lists", description: "Left list to right list using numbers/letters." },
+  { key: "ordering", title: "Order steps", description: "Put a process in the correct order." },
+  { key: "true_false", title: "True or false", description: "Quick misconception checks." }
+];
+
+const DEFAULT_QUESTION_TYPES = {
+  single_choice: true,
+  multi_select: false,
+  written: true,
+  fill_blank: false,
+  matching: false,
+  ordering: false,
+  true_false: false
+};
+
 
 function formatBytes(bytes = 0) {
   if (!bytes) return "0 MB";
@@ -67,6 +87,8 @@ export default function AiUploadPanel({
   const [flashcardTarget, setFlashcardTarget] = useState(16);
   const [quizQuestionTarget, setQuizQuestionTarget] = useState(8);
   const [noteTarget, setNoteTarget] = useState(6);
+  const [questionTypes, setQuestionTypes] = useState(DEFAULT_QUESTION_TYPES);
+  const [questionMixMode, setQuestionMixMode] = useState("ai_decide");
   const [status, setStatus] = useState("idle");
   const [progressText, setProgressText] = useState("");
   const [uploadPercent, setUploadPercent] = useState(0);
@@ -80,6 +102,7 @@ export default function AiUploadPanel({
 
   const existingTopicOptions = (topics || []).filter((topic) => topic?.topicId && topic.topicId !== "all-topics");
   const hasExistingTopicOptions = existingTopicOptions.length > 0;
+  const selectedQuestionTypeCount = Object.values(questionTypes).filter(Boolean).length;
 
   function resetProgress() {
     setProgressSteps([]);
@@ -182,10 +205,19 @@ export default function AiUploadPanel({
     }
   }
 
+  function toggleQuestionType(typeKey) {
+    setQuestionTypes((current) => ({
+      ...current,
+      [typeKey]: !current[typeKey]
+    }));
+  }
+
   function buildContentSettings() {
     const baseSettings = {
       detailLevel,
-      autoTargets: aiDecidesQuantities
+      autoTargets: aiDecidesQuantities,
+      questionTypes,
+      questionMixMode
     };
 
     if (aiDecidesQuantities) {
@@ -195,7 +227,7 @@ export default function AiUploadPanel({
     return {
       ...baseSettings,
       flashcardTarget: Number(flashcardTarget),
-      quizQuestionTarget: Number(quizQuestionTarget),
+      quizQuestionTarget: selectedQuestionTypeCount > 0 ? Number(quizQuestionTarget) : 0,
       noteTarget: Number(noteTarget)
     };
   }
@@ -432,6 +464,51 @@ export default function AiUploadPanel({
           </ul>
         </div>
       )}
+
+      <div className="ai-options-card ai-question-types-card">
+        <div className="ai-options-header">
+          <h3>Practice question styles</h3>
+          <p className="muted mb-0">
+            Choose any mix. Multiple choice is optional, so users can generate written, matching, fill-blank, or mixed tests instead.
+          </p>
+        </div>
+
+        <div className="ai-question-type-grid">
+          {QUESTION_TYPE_OPTIONS.map((option) => (
+            <label className="ai-question-type-tile" key={option.key}>
+              <input
+                type="checkbox"
+                checked={Boolean(questionTypes[option.key])}
+                onChange={() => toggleQuestionType(option.key)}
+              />
+              <span>
+                <strong>{option.title}</strong>
+                <small>{option.description}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        <div className="ai-options-grid ai-options-grid-compact mt-3">
+          <label className="field-block">
+            <span>Question mix</span>
+            <select
+              value={questionMixMode}
+              onChange={(event) => setQuestionMixMode(event.target.value)}
+              disabled={selectedQuestionTypeCount === 0}
+            >
+              <option value="ai_decide">Let AI choose best mix</option>
+              <option value="balanced_mix">Use selected types evenly</option>
+            </select>
+          </label>
+
+          <div className="ai-question-type-summary">
+            {selectedQuestionTypeCount > 0
+              ? `${selectedQuestionTypeCount} question type${selectedQuestionTypeCount === 1 ? "" : "s"} selected.`
+              : "No practice questions selected. The AI will still make notes and flashcards."}
+          </div>
+        </div>
+      </div>
 
       <div className="ai-options-card">
         <div className="ai-options-header">

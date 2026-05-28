@@ -1,7 +1,7 @@
 const express = require("express");
 const { downloadStorageFile, createSignedLectureUpload } = require("../services/supabaseFileService");
 const { extractTextFromFile, chunkText } = require("../services/fileExtractService");
-const { generateTopicFromText } = require("../services/aiService");
+const { generateTopicFromText, markWrittenAnswer } = require("../services/aiService");
 const { createJob, updateJob, getJob } = require("../services/jobStore");
 
 const router = express.Router();
@@ -303,6 +303,51 @@ router.post("/storage/create-signed-upload", async (req, res) => {
     });
   } catch (error) {
     return sendError(res, 500, "STORAGE_900_CREATE_SIGNED_UPLOAD_FAILED", error);
+  }
+});
+
+
+router.post("/mark-written-answer", async (req, res) => {
+  try {
+    const {
+      question,
+      expectedAnswer,
+      markingPoints,
+      maxMarks,
+      userAnswer
+    } = req.body || {};
+
+    if (!question) {
+      return sendError(res, 400, "AI_MARK_001_MISSING_QUESTION", "Missing question.");
+    }
+
+    if (!String(userAnswer || "").trim()) {
+      return sendError(res, 400, "AI_MARK_002_MISSING_ANSWER", "Missing user answer.");
+    }
+
+    const result = await markWrittenAnswer({
+      question,
+      expectedAnswer,
+      markingPoints,
+      maxMarks,
+      userAnswer
+    });
+
+    return res.json({
+      success: true,
+      result
+    });
+  } catch (error) {
+    return sendError(
+      res,
+      error.status || 500,
+      error.code || "AI_MARK_999_UNEXPECTED_ERROR",
+      error,
+      {
+        provider: process.env.AI_PROVIDER || "openai",
+        model: process.env.AI_PROVIDER === "gemini" ? process.env.GEMINI_MODEL : process.env.OPENAI_MODEL
+      }
+    );
   }
 });
 
