@@ -1,25 +1,68 @@
 import { supabase } from "./supabaseClient";
 
-function rowToSubject(row) {
-  const subject = row.subject || {};
+let ensuredProfileForUserId = null;
+
+function stripInternalSubjectFields(subject) {
+  const { _sharing, _rowId, ...safeSubject } = subject || {};
+  return safeSubject;
+}
+
+function rowToSubject(row, access = {}) {
+  const subject = stripInternalSubjectFields(row.subject || {});
   return {
     ...subject,
     subjectId: subject.subjectId || row.subject_id,
     subjectName: subject.subjectName || row.subject_name,
     description: subject.description || row.description || "",
+    _rowId: row.id,
+    _sharing: {
+      ownerId: row.user_id,
+      role: access.role || "owner",
+      isOwner: Boolean(access.isOwner),
+      ownerName: access.ownerName || "",
+      ownerEmail: access.ownerEmail || "",
+    },
   };
 }
 
-function subjectToRow(subject, userId) {
+function subjectToRow(subject, ownerId) {
+  const safeSubject = stripInternalSubjectFields(subject);
+
   return {
-    user_id: userId,
-    subject_id: subject.subjectId,
-    subject_name: subject.subjectName,
-    description: subject.description || "",
-    summary: subject.summary || "",
-    subject,
+    user_id: ownerId,
+    subject_id: safeSubject.subjectId,
+    subject_name: safeSubject.subjectName,
+    description: safeSubject.description || "",
+    summary: safeSubject.summary || "",
+    subject: safeSubject,
     updated_at: new Date().toISOString(),
   };
+}
+
+function profileLabel(profile) {
+  if (!profile) return "Unknown user";
+  return profile.display_name || profile.username || profile.email || "Unknown user";
+}
+
+function cleanLookupTerm(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getProfileFromMap(profileMap, userId) {
+  return profileMap.get(userId) || null;
+}
+
+async function fetchProfilesByIds(userIds) {
+  const cleanIds = [...new Set((userIds || []).filter(Boolean))];
+  if (cleanIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,email,display_name,username,updated_at")
+    .in("id", cleanIds);
+
+  if (error) throw error;
+  return new Map((data || []).map((profile) => [profile.id, profile]));
 }
 
 export async function getCurrentUser() {
@@ -38,30 +81,102 @@ export function onAuthStateChange(callback) {
 export async function clearSession() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+  ensuredProfileForUserId = null;
 }
 
-async function requireUser() {
+export async function ensureUserProfile(userArg) {
+  const user = userArg || await getCurrentUser();
+  if (!user) return null;
+
+  if (ensuredProfileForUserId === user.id) {
+    return user;
+  }
+
+  const email = cleanLookupTerm(user.email);
+  const fallbackName = email ? email.split("@")[0] : "Revision user";
+  const displayName = user.user_metadata?.full_name || user.user_metadata?.name || fallbackName;
+
+  const { error } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: user.id,
+        email,
+        display_name: displayName,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+  if (error) throw error;
+  ensuredProfileForUserId = user.id;
+  return user;
+}
+
+async function requireUser({ ensureProfile = false } = {}) {
   const user = await getCurrentUser();
   if (!user) {
     throw new Error("You need to be logged in first.");
   }
+
+  if (ensureProfile) {
+    await ensureUserProfile(user);
+  }
+
   return user;
 }
 
 export async function fetchSubjects() {
   const user = await requireUser();
+
+  try {
+    await ensureUserProfile(user);
+  } catch (profileError) {
+    // If the new friends schema has not been applied yet, do not block the whole app.
+    // The Friends page will show the real migration error when opened.
+  }
+
   const { data, error } = await supabase
     .from("subjects")
     .select("*")
-    .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
-  return (data || []).map(rowToSubject);
+
+  const rows = data || [];
+  const { data: collaboratorRows, error: collaboratorError } = await supabase
+    .from("subject_collaborators")
+    .select("id,owner_id,subject_id,collaborator_id,role,created_at")
+    .or(`owner_id.eq.${user.id},collaborator_id.eq.${user.id}`);
+
+  const safeCollaborators = collaboratorError ? [] : (collaboratorRows || []);
+  const collaboratorMap = new Map(
+    safeCollaborators.map((share) => [`${share.owner_id}:${share.subject_id}`, share])
+  );
+
+  let profileMap = new Map();
+  try {
+    profileMap = await fetchProfilesByIds(rows.map((row) => row.user_id));
+  } catch (profileError) {
+    profileMap = new Map();
+  }
+
+  return rows.map((row) => {
+    const isOwner = row.user_id === user.id;
+    const share = collaboratorMap.get(`${row.user_id}:${row.subject_id}`);
+    const ownerProfile = getProfileFromMap(profileMap, row.user_id);
+
+    return rowToSubject(row, {
+      isOwner,
+      role: isOwner ? "owner" : share?.role || "viewer",
+      ownerName: profileLabel(ownerProfile),
+      ownerEmail: ownerProfile?.email || "",
+    });
+  });
 }
 
 export async function createSubject(subject) {
-  const user = await requireUser();
+  const user = await requireUser({ ensureProfile: true });
   const row = subjectToRow(subject, user.id);
   row.created_at = new Date().toISOString();
 
@@ -71,17 +186,55 @@ export async function createSubject(subject) {
 }
 
 export async function saveSubject(subject) {
-  const user = await requireUser();
+  const user = await requireUser({ ensureProfile: true });
+  const ownerId = subject?._sharing?.ownerId || user.id;
+  const role = subject?._sharing?.role || "owner";
+  const row = subjectToRow(subject, ownerId);
+
+  if (ownerId !== user.id) {
+    if (role !== "editor") {
+      throw new Error("This subject is shared as view-only, so it cannot be edited.");
+    }
+
+    const { error } = await supabase
+      .from("subjects")
+      .update(row)
+      .eq("user_id", ownerId)
+      .eq("subject_id", subject.subjectId);
+
+    if (error) throw error;
+    return fetchSubjects();
+  }
+
   const { error } = await supabase
     .from("subjects")
-    .upsert(subjectToRow(subject, user.id), { onConflict: "user_id,subject_id" });
+    .upsert(row, { onConflict: "user_id,subject_id" });
 
   if (error) throw error;
   return fetchSubjects();
 }
 
-export async function deleteSubject(subjectId) {
-  const user = await requireUser();
+export async function deleteSubject(subjectOrSubjectId) {
+  const user = await requireUser({ ensureProfile: true });
+  const subjectId = typeof subjectOrSubjectId === "string" ? subjectOrSubjectId : subjectOrSubjectId?.subjectId;
+  const sharing = typeof subjectOrSubjectId === "string" ? null : subjectOrSubjectId?._sharing;
+
+  if (!subjectId) {
+    throw new Error("Missing subject ID.");
+  }
+
+  if (sharing && sharing.ownerId && sharing.ownerId !== user.id) {
+    const { error } = await supabase
+      .from("subject_collaborators")
+      .delete()
+      .eq("owner_id", sharing.ownerId)
+      .eq("subject_id", subjectId)
+      .eq("collaborator_id", user.id);
+
+    if (error) throw error;
+    return fetchSubjects();
+  }
+
   const { error } = await supabase
     .from("subjects")
     .delete()
@@ -93,7 +246,12 @@ export async function deleteSubject(subjectId) {
 }
 
 export async function saveAllSubjects(subjects) {
-  const user = await requireUser();
+  const user = await requireUser({ ensureProfile: true });
+  const ownSubjects = (subjects || []).filter((subject) => {
+    const ownerId = subject?._sharing?.ownerId || user.id;
+    return ownerId === user.id;
+  });
+
   const { error: deleteError } = await supabase
     .from("subjects")
     .delete()
@@ -101,11 +259,182 @@ export async function saveAllSubjects(subjects) {
 
   if (deleteError) throw deleteError;
 
-  if ((subjects || []).length > 0) {
-    const rows = subjects.map((subject) => subjectToRow(subject, user.id));
+  if (ownSubjects.length > 0) {
+    const rows = ownSubjects.map((subject) => subjectToRow(subject, user.id));
     const { error: insertError } = await supabase.from("subjects").insert(rows);
     if (insertError) throw insertError;
   }
 
   return fetchSubjects();
+}
+
+export async function findProfileForSharing(searchTerm) {
+  const user = await requireUser({ ensureProfile: true });
+  const cleanTerm = String(searchTerm || "").trim();
+
+  if (!cleanTerm) {
+    throw new Error("Enter a friend's email or username.");
+  }
+
+  const { data, error } = await supabase.rpc("find_profile_for_sharing", {
+    search_term: cleanTerm,
+  });
+
+  if (error) throw error;
+  const profile = Array.isArray(data) ? data[0] : data;
+
+  if (!profile) {
+    throw new Error("Could not find a user with that email or username. They may need to log in once first.");
+  }
+
+  if (profile.id === user.id) {
+    throw new Error("You cannot add or share with yourself.");
+  }
+
+  return profile;
+}
+
+export async function fetchFriendData() {
+  const user = await requireUser({ ensureProfile: true });
+
+  const { data: currentProfile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id,email,display_name,username")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) throw profileError;
+
+  const { data: requestRows, error: requestError } = await supabase
+    .from("friend_requests")
+    .select("id,requester_id,receiver_id,status,created_at,responded_at")
+    .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`)
+    .order("created_at", { ascending: false });
+
+  if (requestError) throw requestError;
+
+  const rows = requestRows || [];
+  const profileMap = await fetchProfilesByIds(
+    rows.flatMap((request) => [request.requester_id, request.receiver_id])
+  );
+
+  const withProfiles = rows.map((request) => ({
+    ...request,
+    requester: getProfileFromMap(profileMap, request.requester_id),
+    receiver: getProfileFromMap(profileMap, request.receiver_id),
+  }));
+
+  return {
+    currentProfile,
+    incoming: withProfiles.filter((request) => request.receiver_id === user.id && request.status === "pending"),
+    outgoing: withProfiles.filter((request) => request.requester_id === user.id && request.status === "pending"),
+    friends: withProfiles.filter((request) => request.status === "accepted"),
+  };
+}
+
+export async function sendFriendRequest(searchTerm) {
+  const user = await requireUser({ ensureProfile: true });
+  const targetProfile = await findProfileForSharing(searchTerm);
+
+  const { data: existing, error: existingError } = await supabase
+    .from("friend_requests")
+    .select("id,status,requester_id,receiver_id")
+    .or(`and(requester_id.eq.${user.id},receiver_id.eq.${targetProfile.id}),and(requester_id.eq.${targetProfile.id},receiver_id.eq.${user.id})`)
+    .limit(1);
+
+  if (existingError) throw existingError;
+
+  if ((existing || []).length > 0) {
+    const current = existing[0];
+    if (current.status === "accepted") {
+      throw new Error("You are already friends with this user.");
+    }
+    throw new Error("A friend request already exists between you and this user.");
+  }
+
+  const { error } = await supabase.from("friend_requests").insert({
+    requester_id: user.id,
+    receiver_id: targetProfile.id,
+    status: "pending",
+  });
+
+  if (error) throw error;
+  return fetchFriendData();
+}
+
+export async function respondFriendRequest(requestId, status) {
+  await requireUser({ ensureProfile: true });
+  const nextStatus = status === "accepted" ? "accepted" : "declined";
+
+  const { error } = await supabase
+    .from("friend_requests")
+    .update({
+      status: nextStatus,
+      responded_at: new Date().toISOString(),
+    })
+    .eq("id", requestId)
+    .eq("status", "pending");
+
+  if (error) throw error;
+  return fetchFriendData();
+}
+
+export async function shareSubjectWithUser({ subjectId, target, role }) {
+  const user = await requireUser({ ensureProfile: true });
+  const cleanRole = role === "editor" ? "editor" : "viewer";
+  const targetProfile = await findProfileForSharing(target);
+
+  if (!subjectId) {
+    throw new Error("Choose a subject to share.");
+  }
+
+  const { error } = await supabase
+    .from("subject_collaborators")
+    .upsert(
+      {
+        owner_id: user.id,
+        subject_id: subjectId,
+        collaborator_id: targetProfile.id,
+        role: cleanRole,
+      },
+      { onConflict: "owner_id,subject_id,collaborator_id" }
+    );
+
+  if (error) throw error;
+  return fetchSubjectShares(subjectId);
+}
+
+export async function fetchSubjectShares(subjectId) {
+  const user = await requireUser({ ensureProfile: true });
+
+  if (!subjectId) return [];
+
+  const { data, error } = await supabase
+    .from("subject_collaborators")
+    .select("id,owner_id,subject_id,collaborator_id,role,created_at")
+    .eq("owner_id", user.id)
+    .eq("subject_id", subjectId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const rows = data || [];
+  const profileMap = await fetchProfilesByIds(rows.map((share) => share.collaborator_id));
+
+  return rows.map((share) => ({
+    ...share,
+    collaborator: getProfileFromMap(profileMap, share.collaborator_id),
+  }));
+}
+
+export async function removeSubjectShare(shareId) {
+  await requireUser({ ensureProfile: true });
+
+  const { error } = await supabase
+    .from("subject_collaborators")
+    .delete()
+    .eq("id", shareId);
+
+  if (error) throw error;
+  return true;
 }

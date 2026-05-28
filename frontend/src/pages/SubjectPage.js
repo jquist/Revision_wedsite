@@ -118,7 +118,10 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
   const [editingTopic, setEditingTopic] = useState(null);
 
   const selectedTopic = findTopicById(subject, selectedTopicId);
-  const canEditSelectedTopic = !readOnly && selectedTopicId !== ALL_TOPICS_ID && selectedTopic;
+  const sharing = subject?._sharing || {};
+  const isShared = sharing.isOwner === false;
+  const effectiveReadOnly = readOnly || sharing.role === "viewer";
+  const canEditSelectedTopic = !effectiveReadOnly && selectedTopicId !== ALL_TOPICS_ID && selectedTopic;
 
   function makeUniqueTopic(topic) {
     const safeTopic = normaliseTopic(topic);
@@ -315,12 +318,23 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
               <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
                 <h1 className="mb-0">{subject.subjectName}</h1>
                 {isDemo && <span className="badge rounded-pill text-bg-info">Demo mode</span>}
+                {isShared && (
+                  <span className={`badge rounded-pill ${sharing.role === "editor" ? "text-bg-success" : "text-bg-secondary"}`}>
+                    Shared {sharing.role === "editor" ? "editor" : "viewer"}
+                  </span>
+                )}
               </div>
               <p className="subject-page-description mb-0">{subject.description}</p>
+              {isShared && (
+                <p className="small text-muted mt-2 mb-0">
+                  Shared by {sharing.ownerName || sharing.ownerEmail || "another user"}.
+                  {sharing.role === "viewer" ? " You can revise this subject, but editing is locked." : " You can edit and import content."}
+                </p>
+              )}
             </div>
           </div>
 
-          {!readOnly && currentUserId && (
+          {!effectiveReadOnly && currentUserId && (
             <div className="mt-4 ai-import-collapse-wrap">
               <button
                 className="ai-import-toggle-card"
@@ -362,7 +376,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
                 showAllTopics={!isDemo}
               />
             </div>
-            {!readOnly && (
+            {!effectiveReadOnly && (
               <div className="col-md-auto">
                 <div className="d-flex flex-wrap gap-2 workspace-toolbar-actions">
                   {canEditSelectedTopic && (
@@ -378,7 +392,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
             )}
           </div>
 
-          {!readOnly && showNewTopicForm && (
+          {!effectiveReadOnly && showNewTopicForm && (
             <form className="card revision-card shadow-sm mb-4" onSubmit={handleAddTopic}>
               <div className="card-body">
                 <h2 className="h5">Create a new topic</h2>
@@ -460,7 +474,7 @@ function SubjectPage({ subject, onBack, onUpdateSubject, currentUserId = "", isD
               onMarkFlashcards={handleMarkFlashcards}
               onAddFlashcard={handleAddFlashcard}
               onRefreshCardStats={handleRefreshCardStats}
-              readOnly={readOnly}
+              readOnly={effectiveReadOnly}
               isDemo={isDemo}
             />
           )}

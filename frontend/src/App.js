@@ -8,6 +8,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthConfirmedPage from "./pages/AuthConfirmedPage";
 import ContactPage from "./pages/ContactPage";
 import SettingsPage from "./pages/SettingsPage";
+import FriendsPage from "./pages/FriendsPage";
 import SiteFooter from "./components/SiteFooter";
 import { demoSubject as baseDemoSubject } from "./data/demoSubject";
 import { createBlankSubject } from "./utils/revisionHelpers";
@@ -351,7 +352,8 @@ function App() {
     }
   }
 
-  async function handleDeleteSubject(subjectId) {
+  async function handleDeleteSubject(subjectOrSubjectId) {
+    const subjectId = typeof subjectOrSubjectId === "string" ? subjectOrSubjectId : subjectOrSubjectId?.subjectId;
     const previousSubjects = subjects;
 
     setSubjects((currentSubjects) => currentSubjects.filter((subject) => subject.subjectId !== subjectId));
@@ -361,7 +363,7 @@ function App() {
     }
 
     try {
-      const savedSubjects = await deleteSubject(subjectId);
+      const savedSubjects = await deleteSubject(subjectOrSubjectId);
       setSubjects(savedSubjects);
     } catch (deleteError) {
       setError(deleteError.message);
@@ -417,8 +419,43 @@ function App() {
     return <SettingsPage currentUser={currentUser} onLogout={handleLogout} />;
   }
 
+  if (directPath === "/friends" && currentUser) {
+    return (
+      <>
+        <header className="app-header border-bottom">
+          <div className="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
+            <a className="app-brand d-flex align-items-center gap-2" href="/" aria-label="ForgeNotes home">
+              <span className="brand-icon brand-icon-small">FN</span>
+              <span>
+                <strong>ForgeNotes</strong>
+                <small>Friends, sharing, and study collaboration.</small>
+              </span>
+            </a>
+            <nav className="top-account-nav" aria-label="Account navigation">
+              <a className="btn btn-outline-primary" href="/settings">
+                Account settings
+              </a>
+              <button className="btn btn-outline-secondary" onClick={handleLogout}>
+                Log out
+              </button>
+            </nav>
+          </div>
+        </header>
+        <main>
+          <FriendsPage
+            currentUser={currentUser}
+            subjects={subjects}
+            onBackToDashboard={() => { window.location.href = "/"; }}
+            onSubjectsChanged={loadSubjects}
+          />
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
+
   if (!currentUser) {
-    if (directPath === "/settings") {
+    if (directPath === "/settings" || directPath === "/friends") {
       return <AuthPage onLogin={handleLogin} onBackToLanding={showLandingPage} />;
     }
 
@@ -486,6 +523,9 @@ function App() {
             </span>
           </a>
           <nav className="top-account-nav" aria-label="Account navigation">
+            <a className="btn btn-outline-primary" href="/friends">
+              Friends & sharing
+            </a>
             <a className="btn btn-outline-primary" href="/settings">
               Account settings
             </a>
