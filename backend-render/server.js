@@ -6,24 +6,31 @@ const aiRoutes = require("./src/routes/aiRoutes");
 
 const app = express();
 
+function normalizeOrigin(origin) {
+  return String(origin || "").trim().replace(/\/+$/, "");
+}
+
 const allowedOrigins = String(process.env.FRONTEND_ORIGIN || "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
+const corsOptions = {
+  origin(origin, callback) {
+    const cleanOrigin = normalizeOrigin(origin);
 
-      callback(new Error(`CORS blocked origin: ${origin}`));
-    },
-    credentials: true
-  })
-);
+    if (!cleanOrigin || allowedOrigins.length === 0 || allowedOrigins.includes(cleanOrigin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked origin: ${cleanOrigin}. FRONTEND_ORIGIN currently allows: ${allowedOrigins.join(", ") || "all origins"}`));
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json({ limit: "2mb" }));
 
@@ -34,6 +41,8 @@ app.get("/api/health", (req, res) => {
     nodeVersion: process.version,
     hasNativeWebSocket: typeof globalThis.WebSocket !== "undefined",
     aiProvider: process.env.AI_PROVIDER || "openai",
+    requestOrigin: req.get("origin") || null,
+    allowedOrigins,
     time: new Date().toISOString()
   });
 });

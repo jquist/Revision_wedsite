@@ -26,11 +26,12 @@ async function parseJsonResponse(response, stageCode) {
 }
 
 async function createSignedUpload({ file, userId, subjectId, bucket, onDebugStep }) {
-  makeDebug(onDebugStep, "UP-010_CREATE_SIGNED_URL_START", "Requesting signed upload URL.");
+  const apiBaseUrl = getApiBaseUrl();
+  makeDebug(onDebugStep, "UP-010_CREATE_SIGNED_URL_START", `Requesting signed upload URL from ${apiBaseUrl}.`);
 
   let response;
   try {
-    response = await fetch(`${getApiBaseUrl()}/api/ai/storage/create-signed-upload`, {
+    response = await fetch(`${apiBaseUrl}/api/ai/storage/create-signed-upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -43,7 +44,7 @@ async function createSignedUpload({ file, userId, subjectId, bucket, onDebugStep
       })
     });
   } catch (networkError) {
-    throw new Error(`[UP-011_CREATE_SIGNED_URL_NETWORK] ${networkError.message || "Could not reach Render backend."}`);
+    throw new Error(`[UP-011_CREATE_SIGNED_URL_NETWORK] ${networkError.message || "Could not reach Render backend."} Tried backend: ${apiBaseUrl}. This is usually CORS/FRONTEND_ORIGIN or a Vercel API URL build issue.`);
   }
 
   const payload = await parseJsonResponse(response, "UP-012_CREATE_SIGNED_URL");
