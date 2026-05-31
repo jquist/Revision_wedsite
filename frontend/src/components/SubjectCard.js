@@ -27,9 +27,11 @@ function SubjectCard({ subject, onSelectSubject, onDeleteSubject }) {
           <button className="btn btn-primary" onClick={() => onSelectSubject(subject)}>
             Open
           </button>
-          <a className="btn btn-outline-primary" href="/friends">
-            Share
-          </a>
+          {!isShared && (
+            <a className="btn btn-outline-primary" href="/friends">
+              Share
+            </a>
+          )}
           <button className="btn btn-outline-danger" onClick={() => onDeleteSubject(subject)}>
             {isShared ? "Leave" : "Delete"}
           </button>

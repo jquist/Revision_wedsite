@@ -137,14 +137,18 @@ function FriendsPage({ currentUser, subjects = [], onBackToDashboard, onSubjects
     setSuccess("");
 
     try {
-      const data = await shareSubjectWithUser({
+      const result = await shareSubjectWithUser({
         subjectId,
         target: shareTarget,
         role: shareRole,
       });
-      setShares(data);
+      setShares(result.shares || []);
       setShareTarget("");
-      setSuccess("Subject shared. Your friend will see it under their subjects after refreshing/logging in.");
+      if (result.copied) {
+        setSuccess("Independent copy sent. Their version is separate, so their changes will not affect yours.");
+      } else {
+        setSuccess("Subject shared. Your friend will see it under their subjects after refreshing/logging in.");
+      }
       if (typeof onSubjectsChanged === "function") await onSubjectsChanged();
     } catch (saveError) {
       setError(saveError.message);
@@ -182,7 +186,7 @@ function FriendsPage({ currentUser, subjects = [], onBackToDashboard, onSubjects
               <p className="eyebrow mb-2">Friends & sharing</p>
               <h1 className="mb-2">Share revision work with friends</h1>
               <p className="muted mb-0">
-                Add friends, accept requests, and share subjects as view-only or editable. Friends do not automatically see your work.
+                Add friends, accept requests, and share subjects as view-only, editable, or as an independent copy. Friends do not automatically see your work.
               </p>
             </div>
           </div>
@@ -287,6 +291,9 @@ function FriendsPage({ currentUser, subjects = [], onBackToDashboard, onSubjects
               <section className="revision-glass-card h-100">
                 <p className="eyebrow mb-2">Subject sharing</p>
                 <h2 className="h4 mb-3">Share an owned subject</h2>
+                <p className="text-muted small mb-3">
+                  Choose Viewer or Editor for a live shared subject, or Own copy if you want your friend to get a separate copy they can change safely.
+                </p>
 
                 {ownSubjects.length === 0 ? (
                   <p className="text-muted">Create a subject first, then you can share it here.</p>
@@ -336,6 +343,7 @@ function FriendsPage({ currentUser, subjects = [], onBackToDashboard, onSubjects
                             >
                               <option value="viewer">Viewer</option>
                               <option value="editor">Editor</option>
+                              <option value="copy">Own copy</option>
                             </select>
                           </div>
                         </div>
@@ -344,7 +352,7 @@ function FriendsPage({ currentUser, subjects = [], onBackToDashboard, onSubjects
                             Share subject
                           </button>
                           <span className="small text-muted">
-                            Viewer can revise only. Editor can add/import/edit content.
+                            Viewer can revise only. Editor edits the live shared subject. Own copy gives them a separate subject that will not change yours.
                           </span>
                         </div>
                       </div>

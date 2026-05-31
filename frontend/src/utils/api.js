@@ -95,20 +95,36 @@ export async function ensureUserProfile(userArg) {
   const email = cleanLookupTerm(user.email);
   const fallbackName = email ? email.split("@")[0] : "Revision user";
   const displayName = user.user_metadata?.full_name || user.user_metadata?.name || fallbackName;
+  const metadataUsername = cleanLookupTerm(user.user_metadata?.username || "");
+  const safeMetadataUsername = /^[a-z0-9_]{3,24}$/.test(metadataUsername) ? metadataUsername : null;
+
+  const profilePatch = {
+    id: user.id,
+    email,
+    display_name: displayName,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (safeMetadataUsername) {
+    profilePatch.username = safeMetadataUsername;
+  }
 
   const { error } = await supabase
     .from("profiles")
-    .upsert(
-      {
-        id: user.id,
-        email,
-        display_name: displayName,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "id" }
-    );
+    .upsert(profilePatch, { onConflict: "id" });
 
-  if (error) throw error;
+  if (error && profilePatch.username) {
+    // A signup username is only convenience metadata. If it has since been taken,
+    // still create the profile so the user can choose a new username in settings.
+    delete profilePatch.username;
+    const { error: retryError } = await supabase
+      .from("profiles")
+      .upsert(profilePatch, { onConflict: "id" });
+    if (retryError) throw retryError;
+  } else if (error) {
+    throw error;
+  }
+
   ensuredProfileForUserId = user.id;
   return user;
 }
@@ -124,6 +140,36 @@ async function requireUser({ ensureProfile = false } = {}) {
   }
 
   return user;
+}
+
+export async function fetchCurrentProfile() {
+  const user = await requireUser({ ensureProfile: true });
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,email,display_name,username,created_at,updated_at")
+    .eq("id", user.id)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateCurrentProfile({ username, displayName }) {
+  await requireUser({ ensureProfile: true });
+  const cleanUsername = String(username || "").trim().toLowerCase();
+
+  if (!/^[a-z0-9_]{3,24}$/.test(cleanUsername)) {
+    throw new Error("Usernames must be 3-24 characters and can only use lowercase letters, numbers, and underscores.");
+  }
+
+  const { data, error } = await supabase.rpc("update_my_profile", {
+    profile_username: cleanUsername,
+    profile_display_name: String(displayName || "").trim(),
+  });
+
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
 }
 
 export async function fetchSubjects() {
@@ -381,11 +427,26 @@ export async function respondFriendRequest(requestId, status) {
 
 export async function shareSubjectWithUser({ subjectId, target, role }) {
   const user = await requireUser({ ensureProfile: true });
-  const cleanRole = role === "editor" ? "editor" : "viewer";
+  const cleanRole = role === "editor" ? "editor" : role === "copy" ? "copy" : "viewer";
   const targetProfile = await findProfileForSharing(target);
 
   if (!subjectId) {
     throw new Error("Choose a subject to share.");
+  }
+
+  if (cleanRole === "copy") {
+    const { error } = await supabase.rpc("copy_subject_to_user", {
+      source_subject_id: subjectId,
+      target_user_id: targetProfile.id,
+    });
+
+    if (error) throw error;
+
+    return {
+      copied: true,
+      targetProfile,
+      shares: await fetchSubjectShares(subjectId),
+    };
   }
 
   const { error } = await supabase
@@ -401,7 +462,11 @@ export async function shareSubjectWithUser({ subjectId, target, role }) {
     );
 
   if (error) throw error;
-  return fetchSubjectShares(subjectId);
+  return {
+    copied: false,
+    targetProfile,
+    shares: await fetchSubjectShares(subjectId),
+  };
 }
 
 export async function fetchSubjectShares(subjectId) {

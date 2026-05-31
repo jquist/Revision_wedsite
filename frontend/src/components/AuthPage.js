@@ -10,6 +10,7 @@ function AuthPage({ onLogin, onBackToLanding }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,6 +26,7 @@ function AuthPage({ onLogin, onBackToLanding }) {
         const data = await signUpWithSecurePassword({
           email: email.trim(),
           password,
+          username,
         });
 
         if (data.session?.user) {
@@ -102,6 +104,29 @@ function AuthPage({ onLogin, onBackToLanding }) {
                 required
               />
             </div>
+            {mode === "signup" && (
+              <div className="mb-3">
+                <label className="form-label" htmlFor="username">Username</label>
+                <div className="input-group">
+                  <span className="input-group-text">@</span>
+                  <input
+                    id="username"
+                    className="form-control"
+                    type="text"
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value.toLowerCase())}
+                    minLength={3}
+                    maxLength={24}
+                    pattern="[a-z0-9_]{3,24}"
+                    placeholder="e.g. studyfriend"
+                  />
+                </div>
+                <p className="small text-muted mt-1 mb-0">
+                  Optional. Use 3-24 lowercase letters, numbers, or underscores. You can change this later in settings.
+                </p>
+              </div>
+            )}
+
 
             {mode === "signup" && (
               <div className="mb-3">
@@ -119,6 +144,7 @@ function AuthPage({ onLogin, onBackToLanding }) {
             type="button"
             onClick={() => {
               setMode((current) => (current === "login" ? "signup" : "login"));
+              setUsername("");
               setError("");
               setMessage("");
             }}
