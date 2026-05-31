@@ -520,3 +520,41 @@ export async function fetchAdminDashboard() {
   if (error) throw error;
   return data || {};
 }
+
+export async function submitBetaInterest(payload) {
+  const email = cleanLookupTerm(payload?.email || "");
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  if (!emailLooksValid) {
+    throw new Error("Enter a valid email address so interest can be followed up later.");
+  }
+
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data?.user || null;
+  } catch (authError) {
+    user = null;
+  }
+
+  const row = {
+    email,
+    name: String(payload?.name || "").trim() || null,
+    role: String(payload?.role || "student").trim() || "student",
+    subjects: String(payload?.subjects || "").trim() || null,
+    wanted_plan: String(payload?.wantedPlan || "free-beta").trim() || "free-beta",
+    notes: String(payload?.notes || "").trim() || null,
+    source: "pricing_page",
+    user_id: user?.id || null,
+  };
+
+  const { error } = await supabase.from("beta_interest").insert(row);
+
+  if (error) {
+    throw new Error(
+      "Could not save the interest form. Make sure the latest supabase/schema.sql has been run, or email griffingroveproductions@gmail.com instead."
+    );
+  }
+
+  return true;
+}

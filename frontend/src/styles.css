@@ -869,3 +869,127 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Pricing / beta validation page */
+.pricing-page {
+  background: #f8fbf8;
+  color: #142019;
+  min-height: 100vh;
+}
+
+.pricing-hero {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(25, 135, 84, 0.16), transparent 27rem),
+    radial-gradient(circle at 88% 18%, rgba(13, 110, 253, 0.1), transparent 24rem),
+    linear-gradient(135deg, #f1fbf3, #ffffff 55%, #edf7ef);
+}
+
+.pricing-safety-card,
+.pricing-card,
+.pricing-interest-card,
+.pricing-explainer-card {
+  border: 1px solid rgba(25, 135, 84, 0.14);
+}
+
+.pricing-safety-card {
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 1.4rem 4rem rgba(21, 43, 31, 0.13);
+  backdrop-filter: blur(16px);
+}
+
+.pricing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-radius: 1.4rem;
+  padding: 1.35rem;
+  background: #ffffff;
+  box-shadow: 0 1rem 2.5rem rgba(15, 23, 42, 0.08);
+}
+
+.pricing-card-highlighted {
+  border-color: rgba(25, 135, 84, 0.34);
+  box-shadow: 0 1.4rem 3rem rgba(25, 135, 84, 0.14);
+}
+
+.pricing-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  background: rgba(25, 135, 84, 0.12);
+  color: #146c43;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pricing-price {
+  color: #0f172a;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.pricing-feature-list {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  padding-left: 0;
+}
+
+.pricing-feature-list li {
+  position: relative;
+  padding-left: 1.6rem;
+  color: #334155;
+}
+
+.pricing-feature-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #198754;
+  font-weight: 900;
+}
+
+.pricing-explainer-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.beta-interest-form .form-control,
+.beta-interest-form .form-select {
+  border-radius: 0.9rem;
+  border-color: rgba(148, 163, 184, 0.35);
+  padding: 0.75rem 0.9rem;
+}
+
+.beta-interest-form .form-control:focus,
+.beta-interest-form .form-select:focus {
+  border-color: rgba(25, 135, 84, 0.55);
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.14);
+}
+
+.admin-notes-cell {
+  min-width: 220px;
+  max-width: 360px;
+  white-space: normal;
+}
+
+@media (max-width: 768px) {
+  .pricing-hero .display-4 {
+    font-size: 2.35rem;
+  }
+
+  .pricing-card,
+  .pricing-safety-card {
+    border-radius: 1.1rem;
+  }
+}

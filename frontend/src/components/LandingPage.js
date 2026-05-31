@@ -17,6 +17,9 @@ function LandingPage({ onStartAuth, onViewDemo }) {
               <span className="fw-bold">ForgeNotes</span>
             </div>
             <div className="d-flex flex-wrap align-items-center gap-2">
+              <a className="btn btn-outline-secondary rounded-pill px-3" href="/pricing">
+                Pricing
+              </a>
               <button className="btn btn-light rounded-pill px-3 shadow-sm" onClick={onViewDemo}>
                 View demo
               </button>
@@ -128,6 +131,21 @@ function LandingPage({ onStartAuth, onViewDemo }) {
               <p className="text-muted mb-0">Flashcard scores help show which cards need more practice.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="container pb-5">
+        <div className="revision-glass-card pricing-explainer-card">
+          <div>
+            <p className="eyebrow">Free beta first</p>
+            <h2 className="h4">Pricing can be tested without taking payments.</h2>
+            <p className="text-muted mb-0">
+              ForgeNotes currently uses a no-payment beta approach: show the future pricing direction, collect interest, and only connect Stripe/PayPal if there is real demand.
+            </p>
+          </div>
+          <a className="btn btn-outline-primary rounded-pill px-4" href="/pricing">
+            View pricing plan
+          </a>
         </div>
       </section>
     </main>

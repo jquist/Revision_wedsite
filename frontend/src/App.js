@@ -7,6 +7,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthConfirmedPage from "./pages/AuthConfirmedPage";
 import ContactPage from "./pages/ContactPage";
+import PricingPage from "./pages/PricingPage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPage from "./pages/AdminPage";
 import FriendsPage from "./pages/FriendsPage";
@@ -433,6 +434,10 @@ function App() {
     return <ContactPage />;
   }
 
+  if (directPath === "/pricing") {
+    return <PricingPage currentUser={currentUser} />;
+  }
+
   if (directPath === "/forgot-password") {
     return <ForgotPasswordPage />;
   }
@@ -462,6 +467,9 @@ function App() {
               </span>
             </a>
             <nav className="top-account-nav" aria-label="Account navigation">
+              <a className="btn btn-outline-primary" href="/pricing">
+                Pricing
+              </a>
               <a className="btn btn-outline-primary" href="/friends">
                 Friends & sharing
               </a>
@@ -498,6 +506,9 @@ function App() {
               </span>
             </a>
             <nav className="top-account-nav" aria-label="Account navigation">
+              <a className="btn btn-outline-primary" href="/pricing">
+                Pricing
+              </a>
               {isAdmin && (
                 <a className="btn btn-outline-primary" href="/admin">
                   Admin
@@ -594,6 +605,9 @@ function App() {
             </span>
           </a>
           <nav className="top-account-nav" aria-label="Account navigation">
+            <a className="btn btn-outline-primary" href="/pricing">
+              Pricing
+            </a>
             <a className="btn btn-outline-primary" href="/friends">
               Friends & sharing
             </a>

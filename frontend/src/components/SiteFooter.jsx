@@ -23,6 +23,7 @@ export default function SiteFooter() {
           <nav className="footer-links" aria-label="Footer navigation">
             <strong>Website</strong>
             <a href="/">Home</a>
+            <a href="/pricing">Pricing</a>
             <a href="/contact">Contact</a>
             <a href="/forgot-password">Reset password</a>
           </nav>

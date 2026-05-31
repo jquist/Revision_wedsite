@@ -70,6 +70,7 @@ function AdminPage({ currentUser, onLogout }) {
   const subjects = useMemo(() => dashboard?.subjects || [], [dashboard]);
   const shares = useMemo(() => dashboard?.shares || [], [dashboard]);
   const friendRequests = useMemo(() => dashboard?.friendRequests || [], [dashboard]);
+  const betaInterest = useMemo(() => dashboard?.betaInterest || [], [dashboard]);
   const adminEmails = useMemo(() => dashboard?.adminEmails || [], [dashboard]);
 
   if (status === "loading") {
@@ -135,6 +136,7 @@ function AdminPage({ currentUser, onLogout }) {
           <StatCard label="Subjects" value={stats.subjects} help="All saved revision subjects" />
           <StatCard label="Shared subjects" value={stats.subjectShares} help="Viewer/editor links" />
           <StatCard label="Friend requests" value={stats.friendRequests} help={`${formatNumber(stats.pendingFriendRequests)} pending`} />
+          <StatCard label="Beta interest" value={stats.betaInterest} help="Pricing page responses" />
           <StatCard label="Admins" value={adminEmails.length} help="Approved admin emails" />
         </section>
 
@@ -293,6 +295,48 @@ function AdminPage({ currentUser, onLogout }) {
             </div>
           </section>
         </div>
+
+
+        <section className="revision-glass-card admin-card">
+          <div className="admin-section-heading">
+            <div>
+              <h2 className="h4 mb-1">Beta pricing interest</h2>
+              <p className="muted mb-0">People who filled in the pricing page interest form. This is not payment data.</p>
+            </div>
+          </div>
+          <div className="table-responsive admin-table-wrap">
+            <table className="table table-hover align-middle admin-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Interest</th>
+                  <th>Subjects</th>
+                  <th>Notes</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {betaInterest.length === 0 ? (
+                  <EmptyRow colSpan={7}>No pricing interest responses yet.</EmptyRow>
+                ) : (
+                  betaInterest.map((entry) => (
+                    <tr key={entry.id || `${entry.email}-${entry.createdAt}`}>
+                      <td>{entry.email || "—"}</td>
+                      <td>{entry.name || "—"}</td>
+                      <td><span className="admin-role-pill">{entry.role || "—"}</span></td>
+                      <td>{entry.wantedPlan || "—"}</td>
+                      <td>{entry.subjects || "—"}</td>
+                      <td className="admin-notes-cell">{entry.notes || "—"}</td>
+                      <td>{formatDate(entry.createdAt)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section className="revision-glass-card admin-card">
           <h2 className="h4">Approved admin emails</h2>

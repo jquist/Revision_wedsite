@@ -424,6 +424,43 @@ create index if not exists subject_collaborators_owner_subject_idx on public.sub
 create index if not exists subject_collaborators_collaborator_idx on public.subject_collaborators(collaborator_id);
 
 
+-- Beta pricing / demand validation support.
+-- This lets the public pricing page collect interest without taking payments.
+create table if not exists public.beta_interest (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  email text not null,
+  name text,
+  role text not null default 'student',
+  subjects text,
+  wanted_plan text not null default 'free-beta',
+  notes text,
+  source text not null default 'pricing_page',
+  created_at timestamptz not null default now()
+);
+
+alter table public.beta_interest enable row level security;
+
+drop policy if exists "Anyone can register beta interest" on public.beta_interest;
+
+create policy "Anyone can register beta interest"
+on public.beta_interest
+for insert
+to anon, authenticated
+with check (
+  email is not null
+  and length(trim(email)) > 3
+  and position('@' in email) > 1
+  and (user_id is null or auth.uid() = user_id)
+);
+
+revoke all on public.beta_interest from anon, authenticated;
+grant insert on public.beta_interest to anon, authenticated;
+
+create index if not exists beta_interest_created_at_idx on public.beta_interest(created_at desc);
+create index if not exists beta_interest_email_idx on public.beta_interest(lower(email));
+
+
 -- Admin dashboard support.
 -- Only emails in public.admin_emails can call the protected admin RPC.
 create table if not exists public.admin_emails (
@@ -540,7 +577,8 @@ begin
       'subjectShares', (select count(*) from public.subject_collaborators),
       'friendRequests', (select count(*) from public.friend_requests),
       'pendingFriendRequests', (select count(*) from public.friend_requests where status = 'pending'),
-      'acceptedFriendships', (select count(*) from public.friend_requests where status = 'accepted')
+      'acceptedFriendships', (select count(*) from public.friend_requests where status = 'accepted'),
+      'betaInterest', (select count(*) from public.beta_interest)
     ),
     'adminEmails', coalesce((
       select jsonb_agg(ae.email order by ae.email)
@@ -636,6 +674,24 @@ begin
       left join auth.users ru on ru.id = fr.requester_id
       left join public.profiles vp on vp.id = fr.receiver_id
       left join auth.users vu on vu.id = fr.receiver_id
+    ), '[]'::jsonb),
+    'betaInterest', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', bi.id,
+          'email', bi.email,
+          'name', bi.name,
+          'role', bi.role,
+          'subjects', bi.subjects,
+          'wantedPlan', bi.wanted_plan,
+          'notes', bi.notes,
+          'source', bi.source,
+          'userId', bi.user_id,
+          'createdAt', bi.created_at
+        )
+        order by bi.created_at desc
+      )
+      from public.beta_interest bi
     ), '[]'::jsonb)
   ) into result;
 
