@@ -8,6 +8,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthConfirmedPage from "./pages/AuthConfirmedPage";
 import ContactPage from "./pages/ContactPage";
 import SettingsPage from "./pages/SettingsPage";
+import AdminPage from "./pages/AdminPage";
 import FriendsPage from "./pages/FriendsPage";
 import SiteFooter from "./components/SiteFooter";
 import { demoSubject as baseDemoSubject } from "./data/demoSubject";
@@ -18,6 +19,7 @@ import {
   deleteSubject,
   fetchSubjects,
   getCurrentUser,
+  isCurrentUserAdmin,
   onAuthStateChange,
   saveAllSubjects,
   saveSubject,
@@ -148,6 +150,7 @@ function App() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [hasLoadedSubjects, setHasLoadedSubjects] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState("");
 
   const currentUserId = currentUser?.id || null;
@@ -182,6 +185,7 @@ function App() {
         setSubjects([]);
         setSelectedSubjectId(null);
         setHasLoadedSubjects(false);
+        setIsAdmin(false);
         return;
       }
 
@@ -250,6 +254,30 @@ function App() {
   }, [currentUserId]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function checkAdminStatus() {
+      if (!currentUserId) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const adminStatus = await isCurrentUserAdmin();
+        if (isMounted) setIsAdmin(adminStatus);
+      } catch (adminError) {
+        if (isMounted) setIsAdmin(false);
+      }
+    }
+
+    checkAdminStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
     function restoreOpenSubjectAfterTabFocus() {
       if (!currentUserId) return;
 
@@ -279,6 +307,7 @@ function App() {
     setVisitorMode("landing");
     setCurrentUser(user);
     setHasLoadedSubjects(false);
+    setIsAdmin(false);
     setSelectedSubjectId(getStoredSubjectId(user?.id) || null);
   }
 
@@ -312,6 +341,7 @@ function App() {
       setSubjects([]);
       setSelectedSubjectId(null);
       setHasLoadedSubjects(false);
+      setIsAdmin(false);
     }
   }
 
@@ -419,6 +449,42 @@ function App() {
     return <SettingsPage currentUser={currentUser} onLogout={handleLogout} />;
   }
 
+  if (directPath === "/admin" && currentUser) {
+    return (
+      <>
+        <header className="app-header border-bottom">
+          <div className="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
+            <a className="app-brand d-flex align-items-center gap-2" href="/" aria-label="ForgeNotes home">
+              <span className="brand-icon brand-icon-small">FN</span>
+              <span>
+                <strong>ForgeNotes</strong>
+                <small>Admin dashboard.</small>
+              </span>
+            </a>
+            <nav className="top-account-nav" aria-label="Account navigation">
+              <a className="btn btn-outline-primary" href="/friends">
+                Friends & sharing
+              </a>
+              {isAdmin && (
+                <a className="btn btn-outline-primary" href="/admin">
+                  Admin
+                </a>
+              )}
+              <a className="btn btn-outline-primary" href="/settings">
+                Account settings
+              </a>
+              <button className="btn btn-outline-secondary" onClick={handleLogout}>
+                Log out
+              </button>
+            </nav>
+          </div>
+        </header>
+        <AdminPage currentUser={currentUser} onLogout={handleLogout} />
+        <SiteFooter />
+      </>
+    );
+  }
+
   if (directPath === "/friends" && currentUser) {
     return (
       <>
@@ -432,6 +498,11 @@ function App() {
               </span>
             </a>
             <nav className="top-account-nav" aria-label="Account navigation">
+              {isAdmin && (
+                <a className="btn btn-outline-primary" href="/admin">
+                  Admin
+                </a>
+              )}
               <a className="btn btn-outline-primary" href="/settings">
                 Account settings
               </a>
@@ -455,7 +526,7 @@ function App() {
   }
 
   if (!currentUser) {
-    if (directPath === "/settings" || directPath === "/friends") {
+    if (directPath === "/settings" || directPath === "/friends" || directPath === "/admin") {
       return <AuthPage onLogin={handleLogin} onBackToLanding={showLandingPage} />;
     }
 
@@ -526,6 +597,11 @@ function App() {
             <a className="btn btn-outline-primary" href="/friends">
               Friends & sharing
             </a>
+            {isAdmin && (
+              <a className="btn btn-outline-primary" href="/admin">
+                Admin
+              </a>
+            )}
             <a className="btn btn-outline-primary" href="/settings">
               Account settings
             </a>

@@ -503,3 +503,20 @@ export async function removeSubjectShare(shareId) {
   if (error) throw error;
   return true;
 }
+
+
+export async function isCurrentUserAdmin() {
+  await requireUser({ ensureProfile: true });
+
+  const { data, error } = await supabase.rpc("is_current_user_admin");
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function fetchAdminDashboard() {
+  await requireUser({ ensureProfile: true });
+
+  const { data, error } = await supabase.rpc("get_admin_dashboard");
+  if (error) throw error;
+  return data || {};
+}
