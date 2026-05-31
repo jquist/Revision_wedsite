@@ -6,7 +6,7 @@ const initialForm = {
   email: "",
   role: "student",
   subjects: "",
-  wantedPlan: "free-beta",
+  wantedPlan: "student",
   notes: "",
 };
 
@@ -38,7 +38,7 @@ function BetaInterestForm({ currentUser }) {
     try {
       await submitBetaInterest(form);
       setStatus("success");
-      setMessage("Saved! This records interest only — no payment, subscription, or business account is connected.");
+      setMessage("Thanks! You are on the ForgeNotes plan update list.");
       setForm((currentForm) => ({
         ...initialForm,
         email: currentForm.email,
@@ -47,7 +47,7 @@ function BetaInterestForm({ currentUser }) {
       setStatus("error");
       setMessage(
         submitError.message ||
-        "Could not save the form. You can still email griffingroveproductions@gmail.com."
+        "Could not save the form. Please try again or use the contact page."
       );
     }
   }
@@ -96,17 +96,17 @@ function BetaInterestForm({ currentUser }) {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label" htmlFor="beta-plan">Interest level</label>
+          <label className="form-label" htmlFor="beta-plan">Plan interest</label>
           <select
             id="beta-plan"
             className="form-select"
             value={form.wantedPlan}
             onChange={(event) => updateField("wantedPlan", event.target.value)}
           >
-            <option value="free-beta">I want to try the free beta</option>
-            <option value="student-paid">I might pay for a low-cost student plan</option>
-            <option value="class-group">I want a class / group option</option>
-            <option value="feedback-only">I only want updates / feedback access</option>
+            <option value="free">Free</option>
+            <option value="student">Student - £3.99/month</option>
+            <option value="pro">Pro - £6.99/month</option>
+            <option value="group">Group / tutor plan</option>
           </select>
         </div>
 
@@ -123,14 +123,14 @@ function BetaInterestForm({ currentUser }) {
         </div>
 
         <div className="col-12">
-          <label className="form-label" htmlFor="beta-notes">What would make ForgeNotes worth using?</label>
+          <label className="form-label" htmlFor="beta-notes">Anything you want us to know?</label>
           <textarea
             id="beta-notes"
             className="form-control"
             rows="4"
             value={form.notes}
             onChange={(event) => updateField("notes", event.target.value)}
-            placeholder="Optional feedback, feature requests, or pricing thoughts"
+            placeholder="Optional: subjects, study goals, or features you care about"
           />
         </div>
       </div>
@@ -143,9 +143,9 @@ function BetaInterestForm({ currentUser }) {
 
       <div className="d-flex flex-wrap align-items-center gap-3 mt-4">
         <button className="btn btn-success rounded-pill px-4" type="submit" disabled={status === "saving"}>
-          {status === "saving" ? "Saving..." : "Register interest"}
+          {status === "saving" ? "Saving..." : "Join updates"}
         </button>
-        <span className="small text-muted">No card details. No payment account. No subscription started.</span>
+        <span className="small text-muted">Plan updates only. You can use the contact page for support questions.</span>
       </div>
     </form>
   );

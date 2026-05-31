@@ -2,34 +2,129 @@ import React from "react";
 import BetaInterestForm from "../components/BetaInterestForm";
 import SiteFooter from "../components/SiteFooter";
 
-const SUPPORT_EMAIL = "griffingroveproductions@gmail.com";
+const plans = [
+  {
+    badge: "Best for trying it out",
+    title: "Free",
+    price: "£0",
+    cadence: "forever",
+    description: "A simple way to organise one subject and test the core revision tools.",
+    limits: [
+      "1 subject",
+      "5 study topics per subject",
+      "Up to 100 flashcards",
+      "Up to 5 saved practice tests",
+      "Manual notes, flashcards, and questions",
+    ],
+    features: ["Demo content", "Basic progress tracking", "Standard account settings"],
+    cta: "Start free",
+    href: "/#mode=auth",
+  },
+  {
+    badge: "Recommended",
+    title: "Student",
+    price: "£3.99",
+    cadence: "per month",
+    description: "For students who want enough space for current modules, topics, and AI-assisted revision.",
+    limits: [
+      "2 active subjects",
+      "11 study topics per subject",
+      "General / All Topics does not count towards the topic limit",
+      "Up to 1,000 flashcards",
+      "Up to 25 AI imports per month",
+    ],
+    features: ["Larger practice tests", "Flashcard games", "Viewer, editor, and own-copy sharing"],
+    cta: "Choose Student",
+    href: "#interest",
+    highlighted: true,
+  },
+  {
+    badge: "More room",
+    title: "Pro",
+    price: "£6.99",
+    cadence: "per month",
+    description: "For heavier revision, multiple subjects, and larger imported sets of notes.",
+    limits: [
+      "6 active subjects",
+      "20 study topics per subject",
+      "General / All Topics does not count towards the topic limit",
+      "Up to 3,000 flashcards",
+      "Up to 75 AI imports per month",
+    ],
+    features: ["Bigger AI-generated tests", "More saved study material", "Higher AI allowance"],
+    cta: "Choose Pro",
+    href: "#interest",
+  },
+  {
+    badge: "Tutors & groups",
+    title: "Group",
+    price: "Custom",
+    cadence: "for small groups",
+    description: "For tutors, classes, and study groups that need shared revision spaces.",
+    limits: [
+      "Multiple learner accounts",
+      "Shared subjects and resources",
+      "Viewer / editor permissions",
+      "Own-copy sharing for independent study",
+      "Admin overview options",
+    ],
+    features: ["Useful for tutors", "Small class support", "Flexible setup"],
+    cta: "Ask about Group",
+    href: "#interest",
+  },
+];
 
-function PlanCard({ badge, title, price, description, features, highlighted }) {
+const comparisonRows = [
+  ["Active subjects", "1", "2", "6", "Custom"],
+  ["Topics per subject", "5", "11", "20", "Custom"],
+  ["Flashcards", "100", "1,000", "3,000", "Custom"],
+  ["AI imports", "—", "25 / month", "75 / month", "Custom"],
+  ["Sharing", "View own content", "Viewer, editor, own copy", "Viewer, editor, own copy", "Group permissions"],
+  ["Practice tests", "5 saved", "Larger tests", "Bigger test sets", "Shared revision sets"],
+];
+
+function PlanCard({ plan }) {
   return (
-    <article className={`pricing-card h-100 ${highlighted ? "pricing-card-highlighted" : ""}`}>
-      {badge && <span className="pricing-badge">{badge}</span>}
-      <h2 className="h4 mb-2">{title}</h2>
-      <p className="pricing-price mb-2">{price}</p>
-      <p className="text-muted">{description}</p>
-      <ul className="pricing-feature-list">
-        {features.map((feature) => (
-          <li key={feature}>{feature}</li>
-        ))}
-      </ul>
-      {highlighted ? (
-        <a className="btn btn-success rounded-pill px-4 mt-auto" href="#interest">
-          Join beta interest list
-        </a>
-      ) : (
-        <button className="btn btn-outline-secondary rounded-pill px-4 mt-auto" type="button" disabled>
-          Coming later
-        </button>
-      )}
+    <article className={`pricing-card h-100 ${plan.highlighted ? "pricing-card-highlighted" : ""}`}>
+      <div className="pricing-card-top">
+        <span className="pricing-badge">{plan.badge}</span>
+        <h2 className="h4 mb-1">{plan.title}</h2>
+        <div className="pricing-price-wrap">
+          <span className="pricing-price">{plan.price}</span>
+          <span className="pricing-cadence">{plan.cadence}</span>
+        </div>
+        <p className="text-muted mb-0">{plan.description}</p>
+      </div>
+
+      <div>
+        <h3 className="pricing-mini-title">Plan limits</h3>
+        <ul className="pricing-feature-list">
+          {plan.limits.map((feature) => (
+            <li key={feature}>{feature}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <h3 className="pricing-mini-title">Included tools</h3>
+        <ul className="pricing-feature-list pricing-feature-list-muted">
+          {plan.features.map((feature) => (
+            <li key={feature}>{feature}</li>
+          ))}
+        </ul>
+      </div>
+
+      <a className={`btn ${plan.highlighted ? "btn-success" : "btn-outline-success"} rounded-pill px-4 mt-auto`} href={plan.href}>
+        {plan.cta}
+      </a>
     </article>
   );
 }
 
 function PricingPage({ currentUser }) {
+  const freeHref = currentUser ? "/" : "/#mode=auth";
+  const displayedPlans = plans.map((plan) => (plan.title === "Free" ? { ...plan, href: freeHref } : plan));
+
   return (
     <>
       <main className="pricing-page">
@@ -52,32 +147,32 @@ function PricingPage({ currentUser }) {
 
             <div className="row align-items-center g-5">
               <div className="col-lg-7">
-                <div className="landing-pill mb-3">No-payment beta plan</div>
+                <div className="landing-pill mb-3">ForgeNotes plans</div>
                 <h1 className="display-4 fw-bold landing-title mb-3">
-                  Test demand before connecting Stripe, PayPal, or a business bank account.
+                  Pick a revision plan that fits how much you study.
                 </h1>
                 <p className="lead text-muted mb-4">
-                  ForgeNotes can show pricing and collect interest without taking real payments. This keeps the site professional while you find out whether people would actually use it.
+                  Start free, then choose more subjects, topics, AI imports, and sharing tools when you need extra space.
                 </p>
                 <div className="d-flex flex-wrap gap-3">
-                  <a className="btn btn-success btn-lg rounded-pill px-4" href="#interest">
-                    Register interest
+                  <a className="btn btn-success btn-lg rounded-pill px-4" href={freeHref}>
+                    Start free
                   </a>
-                  <a className="btn btn-light btn-lg rounded-pill px-4 shadow-sm" href="/#mode=demo">
-                    Try the demo
+                  <a className="btn btn-light btn-lg rounded-pill px-4 shadow-sm" href="#plans">
+                    Compare plans
                   </a>
                 </div>
               </div>
               <div className="col-lg-5">
-                <div className="pricing-safety-card">
-                  <span className="pricing-badge">Safe launch mode</span>
-                  <h2 className="h4 mt-3">What is not connected yet</h2>
+                <div className="pricing-summary-card">
+                  <span className="pricing-badge">Student-friendly limits</span>
+                  <h2 className="h4 mt-3">What paid plans are designed for</h2>
                   <ul className="pricing-feature-list mb-0">
-                    <li>No live Stripe payments</li>
-                    <li>No PayPal checkout</li>
-                    <li>No bank account connection</li>
-                    <li>No subscription billing</li>
-                    <li>No loans, overdrafts, or credit products</li>
+                    <li>More room for separate subjects and modules</li>
+                    <li>AI import allowances for turning files into revision material</li>
+                    <li>Practice tests, flashcards, notes, and study games in one place</li>
+                    <li>Sharing options for friends, tutors, and group revision</li>
+                    <li>Simple limits so students know what each plan includes</li>
                   </ul>
                 </div>
               </div>
@@ -87,71 +182,58 @@ function PricingPage({ currentUser }) {
 
         <section className="container py-5" id="plans">
           <div className="text-center mb-4">
-            <h2 className="fw-bold">Pricing placeholder</h2>
+            <p className="eyebrow">Pricing</p>
+            <h2 className="fw-bold">Simple starting plans</h2>
             <p className="text-muted mb-0">
-              These cards explain the future direction, but only the beta interest form is active.
+              Clear limits for subjects, topics, flashcards, AI imports, and sharing.
             </p>
           </div>
 
           <div className="row g-4">
-            <div className="col-md-4">
-              <PlanCard
-                badge="Active now"
-                title="Free beta"
-                price="£0"
-                description="Best while ForgeNotes is still being tested and improved."
-                features={[
-                  "Use the current study tools",
-                  "Try demo content first",
-                  "Give feedback before pricing is final",
-                  "No card details needed",
-                ]}
-                highlighted
-              />
-            </div>
-            <div className="col-md-4">
-              <PlanCard
-                badge="Coming soon"
-                title="Student plan"
-                price="Price not set"
-                description="A possible low-cost plan if enough people want continued access."
-                features={[
-                  "Subject and topic limits can be added later",
-                  "AI import access can be controlled later",
-                  "Stripe test mode can be built before launch",
-                  "Cancel/subscription pages can be added later",
-                ]}
-              />
-            </div>
-            <div className="col-md-4">
-              <PlanCard
-                badge="Future idea"
-                title="Class / group plan"
-                price="Not available yet"
-                description="A later option for tutors, classrooms, or small study groups."
-                features={[
-                  "Multiple users",
-                  "Shared subjects",
-                  "Viewer/editor/copy sharing model",
-                  "Admin oversight options",
-                ]}
-              />
-            </div>
+            {displayedPlans.map((plan) => (
+              <div className="col-md-6 col-xl-3" key={plan.title}>
+                <PlanCard plan={plan} />
+              </div>
+            ))}
           </div>
         </section>
 
         <section className="container pb-5">
-          <div className="revision-glass-card pricing-explainer-card">
-            <div>
-              <p className="eyebrow">Why this setup</p>
-              <h2 className="h4">You can validate the idea without a business commitment.</h2>
-              <p className="text-muted mb-0">
-                The website can look ready for paid plans while only saving interest responses. When there is real demand, you can connect Stripe in test mode first, then decide whether a separate account is worth it.
-              </p>
+          <div className="revision-glass-card pricing-table-card">
+            <div className="d-flex flex-wrap justify-content-between gap-3 align-items-end mb-3">
+              <div>
+                <p className="eyebrow">Compare limits</p>
+                <h2 className="h4 mb-0">Plan comparison</h2>
+              </div>
+              <a className="btn btn-outline-success rounded-pill px-4" href="#interest">
+                Ask about a plan
+              </a>
             </div>
-            <a className="btn btn-outline-primary rounded-pill px-4" href={`mailto:${SUPPORT_EMAIL}`}>
-              Email feedback
-            </a>
+
+            <div className="table-responsive">
+              <table className="table pricing-compare-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>Free</th>
+                    <th>Student</th>
+                    <th>Pro</th>
+                    <th>Group</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparisonRows.map(([feature, free, student, pro, group]) => (
+                    <tr key={feature}>
+                      <th scope="row">{feature}</th>
+                      <td>{free}</td>
+                      <td>{student}</td>
+                      <td>{pro}</td>
+                      <td>{group}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -159,10 +241,10 @@ function PricingPage({ currentUser }) {
           <div className="row justify-content-center">
             <div className="col-lg-9">
               <div className="revision-glass-card pricing-interest-card">
-                <p className="eyebrow">Beta interest</p>
-                <h2 className="h3">Tell us if you would use ForgeNotes</h2>
+                <p className="eyebrow">Plan interest</p>
+                <h2 className="h3">Get updates about ForgeNotes plans</h2>
                 <p className="text-muted">
-                  This form only records interest. It does not collect card details and does not start a subscription.
+                  Pick the plan you are most interested in and leave your email for launch updates.
                 </p>
                 <BetaInterestForm currentUser={currentUser} />
               </div>
@@ -170,7 +252,7 @@ function PricingPage({ currentUser }) {
           </div>
         </section>
       </main>
-      <SiteFooter />
+      <SiteFooter showContact={false} />
     </>
   );
 }

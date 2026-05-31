@@ -870,7 +870,7 @@ body {
   }
 }
 
-/* Pricing / beta validation page */
+/* Pricing page */
 .pricing-page {
   background: #f8fbf8;
   color: #142019;
@@ -884,14 +884,14 @@ body {
     linear-gradient(135deg, #f1fbf3, #ffffff 55%, #edf7ef);
 }
 
-.pricing-safety-card,
+.pricing-summary-card,
 .pricing-card,
 .pricing-interest-card,
-.pricing-explainer-card {
+.pricing-table-card {
   border: 1px solid rgba(25, 135, 84, 0.14);
 }
 
-.pricing-safety-card {
+.pricing-summary-card {
   border-radius: 1.5rem;
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.82);
@@ -956,12 +956,50 @@ body {
   font-weight: 900;
 }
 
-.pricing-explainer-card {
+
+.pricing-card-top {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.pricing-price-wrap {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  align-items: baseline;
+  gap: 0.45rem;
   flex-wrap: wrap;
+}
+
+.pricing-cadence {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.pricing-mini-title {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0.35rem 0 0.45rem;
+  text-transform: uppercase;
+}
+
+.pricing-feature-list-muted li {
+  color: #475569;
+}
+
+.pricing-compare-table th {
+  color: #0f172a;
+  font-weight: 850;
+}
+
+.pricing-compare-table td,
+.pricing-compare-table th {
+  padding: 0.95rem 0.8rem;
+}
+
+.pricing-compare-table tbody tr:last-child td,
+.pricing-compare-table tbody tr:last-child th {
+  border-bottom: 0;
 }
 
 .beta-interest-form .form-control,
@@ -989,7 +1027,7 @@ body {
   }
 
   .pricing-card,
-  .pricing-safety-card {
+  .pricing-summary-card {
     border-radius: 1.1rem;
   }
 }

@@ -138,13 +138,13 @@ function LandingPage({ onStartAuth, onViewDemo }) {
         <div className="revision-glass-card pricing-explainer-card">
           <div>
             <p className="eyebrow">Free beta first</p>
-            <h2 className="h4">Pricing can be tested without taking payments.</h2>
+            <h2 className="h4">Start free and compare plans.</h2>
             <p className="text-muted mb-0">
-              ForgeNotes currently uses a no-payment beta approach: show the future pricing direction, collect interest, and only connect Stripe/PayPal if there is real demand.
+              ForgeNotes is in beta, so you can explore the study tools now and register interest in the plans or features you would find useful later.
             </p>
           </div>
           <a className="btn btn-outline-primary rounded-pill px-4" href="/pricing">
-            View pricing plan
+            View pricing
           </a>
         </div>
       </section>

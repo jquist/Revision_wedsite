@@ -552,7 +552,7 @@ export async function submitBetaInterest(payload) {
 
   if (error) {
     throw new Error(
-      "Could not save the interest form. Make sure the latest supabase/schema.sql has been run, or email griffingroveproductions@gmail.com instead."
+      "Could not save the form. Please try again or use the contact page."
     );
   }
 

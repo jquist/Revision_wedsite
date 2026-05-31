@@ -2,7 +2,7 @@ import React from "react";
 
 const SUPPORT_EMAIL = "griffingroveproductions@gmail.com";
 
-export default function SiteFooter() {
+export default function SiteFooter({ showContact = true } = {}) {
   return (
     <footer className="site-footer">
       <div className="container py-4">
@@ -29,8 +29,12 @@ export default function SiteFooter() {
           </nav>
 
           <div className="footer-contact">
-            <strong>Contact</strong>
-            <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+            <strong>{showContact ? "Contact" : "Support"}</strong>
+            {showContact ? (
+              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+            ) : (
+              <a href="/contact">Contact page</a>
+            )}
             <span>For support, feedback, bugs, or account help.</span>
           </div>
         </div>

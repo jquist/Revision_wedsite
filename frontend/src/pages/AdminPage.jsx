@@ -301,7 +301,7 @@ function AdminPage({ currentUser, onLogout }) {
           <div className="admin-section-heading">
             <div>
               <h2 className="h4 mb-1">Beta pricing interest</h2>
-              <p className="muted mb-0">People who filled in the pricing page interest form. This is not payment data.</p>
+              <p className="muted mb-0">People who filled in the pricing page interest form.</p>
             </div>
           </div>
           <div className="table-responsive admin-table-wrap">
