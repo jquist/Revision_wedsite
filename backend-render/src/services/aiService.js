@@ -659,40 +659,175 @@ async function generateTopicFromText({
   return applyContentLimits(merged, settings);
 }
 
-function normaliseMarkingResult(parsed, maxMarks) {
+function normaliseMarkStatus(status) {
+  const key = String(status || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "_");
+
+  if (["met", "correct", "yes", "full", "full_credit", "complete"].includes(key)) return "met";
+  if (["partial", "partly", "partly_met", "some", "half", "unclear", "mostly"].includes(key)) return "partial";
+  if (["missing", "not_met", "incorrect", "wrong", "no", "absent"].includes(key)) return "missing";
+
+  return "missing";
+}
+
+function clampCredit(value, fallbackStatus = "missing") {
+  const number = Number(value);
+  if (Number.isFinite(number)) {
+    return Math.max(0, Math.min(1, number));
+  }
+
+  if (fallbackStatus === "met") return 1;
+  if (fallbackStatus === "partial") return 0.5;
+  return 0;
+}
+
+function roundMarks(value) {
+  const number = Number(value) || 0;
+  return Math.round(number * 2) / 2;
+}
+
+function normalisePointBreakdown(parsed, markingPoints = []) {
+  const rawBreakdown =
+    parsed?.pointBreakdown ||
+    parsed?.markingPointResults ||
+    parsed?.points ||
+    parsed?.criteria ||
+    [];
+
+  if (!Array.isArray(rawBreakdown) || !rawBreakdown.length) {
+    return [];
+  }
+
+  return rawBreakdown.map((item, index) => {
+    const fallbackPoint = markingPoints[index] || `Point ${index + 1}`;
+    const markingPoint = String(
+      item?.markingPoint ||
+      item?.point ||
+      item?.criterion ||
+      item?.description ||
+      fallbackPoint
+    );
+    const status = normaliseMarkStatus(item?.status || item?.result || item?.judgement);
+    const credit = clampCredit(item?.credit ?? item?.score ?? item?.pointsAwarded, status);
+
+    return {
+      markingPoint,
+      status: credit >= 0.75 ? "met" : credit > 0 ? "partial" : "missing",
+      credit,
+      reason: String(item?.reason || item?.evidence || item?.comment || "").trim()
+    };
+  });
+}
+
+function normaliseMarkingResult(parsed, maxMarks, markingPoints = []) {
   const safeMax = Math.max(1, Number(maxMarks) || 5);
-  const rawMarks = Number(parsed?.marksAwarded ?? parsed?.score ?? parsed?.marks ?? 0);
-  const marksAwarded = Math.max(0, Math.min(safeMax, Number.isFinite(rawMarks) ? rawMarks : 0));
+  const pointBreakdown = normalisePointBreakdown(parsed, markingPoints);
+
+  let marksAwarded;
+
+  if (pointBreakdown.length) {
+    const totalCredit = pointBreakdown.reduce((sum, point) => sum + clampCredit(point.credit, point.status), 0);
+    marksAwarded = roundMarks((totalCredit / pointBreakdown.length) * safeMax);
+  } else {
+    const rawMarks = Number(parsed?.marksAwarded ?? parsed?.score ?? parsed?.marks ?? 0);
+    marksAwarded = Math.max(0, Math.min(safeMax, Number.isFinite(rawMarks) ? roundMarks(rawMarks) : 0));
+  }
+
+  marksAwarded = Math.max(0, Math.min(safeMax, marksAwarded));
+
+  const correctFromBreakdown = pointBreakdown
+    .filter((point) => point.status === "met")
+    .map((point) => point.markingPoint);
+  const partialFromBreakdown = pointBreakdown
+    .filter((point) => point.status === "partial")
+    .map((point) => point.markingPoint);
+  const missingFromBreakdown = pointBreakdown
+    .filter((point) => point.status === "missing")
+    .map((point) => point.markingPoint);
 
   return {
     marksAwarded,
     maxMarks: safeMax,
     feedback: String(parsed?.feedback || parsed?.summary || "No feedback returned."),
-    correctPoints: Array.isArray(parsed?.correctPoints) ? parsed.correctPoints.map(String) : [],
-    missingPoints: Array.isArray(parsed?.missingPoints) ? parsed.missingPoints.map(String) : [],
+    correctPoints: correctFromBreakdown.length
+      ? correctFromBreakdown
+      : (Array.isArray(parsed?.correctPoints) ? parsed.correctPoints.map(String) : []),
+    partialPoints: partialFromBreakdown.length
+      ? partialFromBreakdown
+      : (Array.isArray(parsed?.partialPoints) ? parsed.partialPoints.map(String) : []),
+    missingPoints: missingFromBreakdown.length
+      ? missingFromBreakdown
+      : (Array.isArray(parsed?.missingPoints) ? parsed.missingPoints.map(String) : []),
     improvementTip: String(parsed?.improvementTip || parsed?.nextStep || ""),
-    confidence: String(parsed?.confidence || "medium")
+    confidence: String(parsed?.confidence || "medium"),
+    pointBreakdown,
+    rubricVersion: "point-based-v2"
   };
 }
 
-async function markWrittenAnswer({ question, expectedAnswer, markingPoints, maxMarks, userAnswer }) {
+function tokeniseForOverlap(value) {
+  const stopWords = new Set([
+    "about", "above", "after", "again", "also", "and", "answer", "between", "could", "each", "from", "have", "into", "more", "most", "that", "their", "then", "there", "these", "they", "this", "what", "when", "where", "which", "with", "would", "your", "the", "for", "are", "but", "not", "you", "all", "can", "its", "it", "is", "of", "on", "or", "to", "a", "an", "in"
+  ]);
+
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length >= 4 && !stopWords.has(token));
+}
+
+function hasMeaningfulOverlap({ userAnswer, question, markingPoints }) {
+  const answerTokens = new Set(tokeniseForOverlap(userAnswer));
+  if (!answerTokens.size) return false;
+
+  const rubricTokens = tokeniseForOverlap(`${question || ""} ${(markingPoints || []).join(" ")}`);
+  const overlapCount = rubricTokens.filter((token) => answerTokens.has(token)).length;
+
+  return overlapCount >= 2;
+}
+
+function buildWrittenMarkingPrompt({ question, expectedAnswer, markingPoints, maxMarks, userAnswer, recheck = false }) {
   const safeMaxMarks = Math.max(1, Math.min(20, Number(maxMarks) || 5));
   const safeMarkingPoints = Array.isArray(markingPoints) ? markingPoints.filter(Boolean) : [];
+  const markingPointsText = safeMarkingPoints.length
+    ? safeMarkingPoints.map((point, index) => `${index + 1}. ${point}`).join("\n")
+    : "No explicit marking points supplied. Create a sensible point breakdown from the expected answer and question.";
 
-  const prompt = `
-You are marking a student's typed revision-test answer.
+  return `
+You are marking a student's typed revision-test answer for a study website.
 Return ONLY valid JSON. Do not include markdown.
-Be fair, useful, and concise. Award partial credit when the answer is partly correct.
-Do not be overly harsh about exact wording if the meaning is correct.
-Do not award marks for unsupported or clearly incorrect claims.
 
-Return this structure:
+IMPORTANT MARKING RULES:
+- Mark against the marking points, NOT exact wording from the model answer.
+- Award credit for the same meaning, synonyms, paraphrasing, short answers, grammar mistakes, spelling mistakes, and student wording.
+- Do not require full sentences if the key idea is present.
+- Grade each marking point independently.
+- For each marking point, use credit 1 when the idea is clearly present, 0.5 when partly present/vague, and 0 when missing or contradicted.
+- marksAwarded must be the sum of point credits scaled to maxMarks.
+- Only give 0/${safeMaxMarks} if the answer is blank, unrelated, or mostly incorrect.
+- If the student mentions the key concepts in a rough but understandable way, give partial or full credit.
+- Be fair and student-friendly. Do not be pedantic.
+${recheck ? "- This is a re-check because a previous pass gave 0 despite apparent overlap. Re-evaluate carefully and avoid false-zero marking." : ""}
+
+Return this exact JSON structure:
 {
   "marksAwarded": 0,
   "maxMarks": ${safeMaxMarks},
   "feedback": "short feedback for the student",
-  "correctPoints": ["point the student got right"],
-  "missingPoints": ["important point missed or unclear"],
+  "pointBreakdown": [
+    {
+      "markingPoint": "copy or summarise marking point 1",
+      "status": "met",
+      "credit": 1,
+      "reason": "brief evidence from the student answer"
+    }
+  ],
+  "correctPoints": ["points fully met"],
+  "partialPoints": ["points partly met"],
+  "missingPoints": ["important points missed or unclear"],
   "improvementTip": "one specific way to improve",
   "confidence": "high"
 }
@@ -702,21 +837,88 @@ ${question}
 
 Max marks: ${safeMaxMarks}
 
-Expected/model answer:
+Expected/model answer, for context only:
 ${expectedAnswer || "No model answer supplied. Use the marking points and question context."}
 
 Marking points:
-${safeMarkingPoints.length ? safeMarkingPoints.map((point, index) => `${index + 1}. ${point}`).join("\n") : "No explicit marking points supplied. Mark against the expected answer."}
+${markingPointsText}
 
 Student answer:
 ${userAnswer}
 `;
+}
+
+async function runWrittenMarkingPass({ question, expectedAnswer, markingPoints, maxMarks, userAnswer, recheck = false }) {
+  const prompt = buildWrittenMarkingPrompt({
+    question,
+    expectedAnswer,
+    markingPoints,
+    maxMarks,
+    userAnswer,
+    recheck
+  });
 
   const raw = await callAIJson({ prompt });
+  const parsed = extractJsonObject(raw);
+  return normaliseMarkingResult(parsed, maxMarks, markingPoints);
+}
+
+async function markWrittenAnswer({ question, expectedAnswer, markingPoints, maxMarks, userAnswer }) {
+  const safeMaxMarks = Math.max(1, Math.min(20, Number(maxMarks) || 5));
+  const safeMarkingPoints = Array.isArray(markingPoints) ? markingPoints.filter(Boolean) : [];
+  const cleanUserAnswer = String(userAnswer || "").trim();
+
+  if (!cleanUserAnswer) {
+    return {
+      marksAwarded: 0,
+      maxMarks: safeMaxMarks,
+      feedback: "No answer was provided.",
+      correctPoints: [],
+      partialPoints: [],
+      missingPoints: safeMarkingPoints.map(String),
+      improvementTip: "Write at least a short answer using the key terms from the question.",
+      confidence: "high",
+      pointBreakdown: safeMarkingPoints.map((point) => ({
+        markingPoint: String(point),
+        status: "missing",
+        credit: 0,
+        reason: "No answer was provided."
+      })),
+      rubricVersion: "point-based-v2"
+    };
+  }
 
   try {
-    const parsed = extractJsonObject(raw);
-    return normaliseMarkingResult(parsed, safeMaxMarks);
+    const firstPass = await runWrittenMarkingPass({
+      question,
+      expectedAnswer,
+      markingPoints: safeMarkingPoints,
+      maxMarks: safeMaxMarks,
+      userAnswer: cleanUserAnswer,
+      recheck: false
+    });
+
+    const shouldRecheckZero =
+      firstPass.marksAwarded === 0 &&
+      cleanUserAnswer.length >= 20 &&
+      hasMeaningfulOverlap({
+        userAnswer: cleanUserAnswer,
+        question,
+        markingPoints: safeMarkingPoints
+      });
+
+    if (!shouldRecheckZero) {
+      return firstPass;
+    }
+
+    return await runWrittenMarkingPass({
+      question,
+      expectedAnswer,
+      markingPoints: safeMarkingPoints,
+      maxMarks: safeMaxMarks,
+      userAnswer: cleanUserAnswer,
+      recheck: true
+    });
   } catch (error) {
     throw new Error(`[AI_MARK_010_PARSE_FAILED] ${error.message}`);
   }

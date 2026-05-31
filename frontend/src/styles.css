@@ -700,3 +700,35 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.ai-mark-point-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ai-mark-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  margin-right: 0.3rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.ai-mark-status-met {
+  background: rgba(34, 197, 94, 0.12);
+  color: #166534;
+}
+
+.ai-mark-status-partial {
+  background: rgba(245, 158, 11, 0.14);
+  color: #92400e;
+}
+
+.ai-mark-status-missing {
+  background: rgba(239, 68, 68, 0.12);
+  color: #991b1b;
+}

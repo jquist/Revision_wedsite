@@ -844,13 +844,38 @@ function PracticeTest({ topic }) {
             <div className="ai-mark-feedback">
               <p className="fw-bold mb-1">AI mark: {formatMarks(mark.marksAwarded)} / {formatMarks(mark.maxMarks)}</p>
               <p className="mb-2">{mark.feedback}</p>
-              {mark.correctPoints?.length > 0 && (
+              {mark.pointBreakdown?.length > 0 && (
+                <div>
+                  <strong>Marking points:</strong>
+                  <ul className="ai-mark-point-list">
+                    {mark.pointBreakdown.map((point, index) => {
+                      const status = point.status || "missing";
+                      const icon = status === "met" ? "✓" : status === "partial" ? "~" : "✕";
+                      const statusText = status === "met" ? "Met" : status === "partial" ? "Partial" : "Missing";
+                      return (
+                        <li key={index}>
+                          <span className={`ai-mark-status ai-mark-status-${status}`}>{icon} {statusText}</span>{" "}
+                          {point.markingPoint}
+                          {point.reason && <span className="small text-muted"> — {point.reason}</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              {!mark.pointBreakdown?.length && mark.correctPoints?.length > 0 && (
                 <div>
                   <strong>Got right:</strong>
                   <ul>{mark.correctPoints.map((point, index) => <li key={index}>{point}</li>)}</ul>
                 </div>
               )}
-              {mark.missingPoints?.length > 0 && (
+              {!mark.pointBreakdown?.length && mark.partialPoints?.length > 0 && (
+                <div>
+                  <strong>Partly correct:</strong>
+                  <ul>{mark.partialPoints.map((point, index) => <li key={index}>{point}</li>)}</ul>
+                </div>
+              )}
+              {!mark.pointBreakdown?.length && mark.missingPoints?.length > 0 && (
                 <div>
                   <strong>Missing / unclear:</strong>
                   <ul>{mark.missingPoints.map((point, index) => <li key={index}>{point}</li>)}</ul>
